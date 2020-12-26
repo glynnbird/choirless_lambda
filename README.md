@@ -6,6 +6,6 @@ Lambda functions for the Choirless project.
 
 The Choirless API.
 
-## pipeline
+## pipeline
 
 The rendering pipeline.
