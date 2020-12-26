@@ -1,0 +1,561 @@
+# Choirless API
+
+## User
+
+### GET /user
+
+Fetch a user by known userId.
+
+Parameters:
+
+- `userId` - the user to fetch
+
+Returns
+
+```js
+{
+  ok: true,
+  user: { ... user document ... }
+}
+```
+
+### POST /user
+
+Create a new user or edit an existing one.
+
+Parameters:
+
+- `userId` - if omitted a new user is generated.
+- `name` - name of user (required for new user).
+- `password` - password  (required for new user).
+- `email` - email address of user (required for new user).
+- `verified` - whether the user is verified or not.
+- `userType` - the userType (regular/admin)
+
+Returns:
+
+```js
+{
+  ok: true,
+  userId: '<id of user>'
+}
+```
+
+> Note: if an attempt is made to create/edit a user with an email that already exists in the database, this API will provide a `409` response.
+
+### POST /user/login
+
+Log in a user with a supplied email and password. If the user exists and the password checks out, the user profile is returned.
+
+Parameters:
+
+- `email` - user email address
+- `password` - user password
+
+looks for user with matching email address and checks the supplied password == sha256(salt + password).
+
+Returns:
+
+```js
+{
+  ok: true,
+  user : { ... user doc ... }
+}
+```
+
+### GET /user/choirs
+
+Get a list of the choirs that a user is a member of
+
+Parameters:
+
+- `userId` - user id
+
+Returns:
+
+```js
+{
+  ok: true,
+  choirs: [ { choir1 }. { choir 2 } ]
+}
+```
+
+### GET /user/byemail
+
+Get a user from their email address
+
+Parameters:
+
+- `email` - the email address of the user (required)
+
+Returns:
+
+```js
+{
+  ok: true,
+  user: { ... user object ... }
+}
+```
+
+## Choir
+
+### GET /choir
+
+Fetch a choir by known choirId.
+
+Parameters:
+
+- `choirId` - the choir to fetch
+
+Returns
+
+```js
+{
+  ok: true,
+  choir: { ... choir doc ... }
+}
+```
+
+### POST /choir
+
+Create a new choir or edits an existing one.
+
+Parameters:
+
+- `choirId` - if omitted a new choir is generated.
+- `name` - name of choir. (required for new choirs)
+- `description` - description of choir.
+- `createdByUserId` - id of user creating the choir. (required for new choirs)
+- `createdByName` - name of user creating the choir. (required for new choirs)
+- `choirType` - one of `private`/`public`. (required for new choirs)
+
+Returns:
+
+```js
+{
+  ok: true
+}
+```
+
+### GET /choir/members
+
+Fetch a list of the members of a choir.
+
+Parameters:
+
+- `choirId` - the choir to fetch
+
+Returns
+
+```js
+{
+  ok: true,
+  members: [ { ... choir member doc ... } ]
+}
+```
+
+### POST /choir/join
+
+Add a user to a choir, or call again to edit the `memberType` e.g. promote member to leader
+
+Parameters:
+
+- `choirId` - the choir to join
+- `userId` - the user joining the choir
+- `name` - the name of the user joining the choir
+- `memberType` - one of `leader`/`member`
+
+Returns
+
+```js
+{
+  ok: true
+}
+```
+
+### DELETE /choir/join
+
+Remove a user from a choir
+
+Parameters:
+
+- `choirId` - the choir to join
+- `userId` - the user joining the choir
+
+Returns
+
+```js
+{
+  ok: true
+}
+```
+
+### POST /choir/song
+
+Add/Edit a choir's song
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `userId` - the id of the user adding the song (required)
+- `name` - the name of the song (required)
+- `description` - a description of a song
+- `partNames` - an array of song partNames (add only) - if supplied during creation of a new song, the `partNames` array is converted into `partNames: [ { partNameId: '<uuid>', name: '<name>'}]` format. Editing of this array is achieved using `POST /choir/songPartName` & `DELETE /choir/songPartName`.
+
+Returns
+
+```js
+{
+  ok: true,
+  songId: '<id of song>'
+}
+```
+
+### GET /choir/song
+
+Get a choir's song by id
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+
+Returns
+
+```js
+{
+  ok: true,
+  song: { ... song document ... }
+}
+```
+
+### DELETE /choir/song
+
+Delete a choir's song and all its song parts
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+
+Returns
+
+```js
+{
+  ok: true
+}
+```
+
+### GET /choir/songs
+
+Get a list of a choir's songs in newest first order.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+
+Returns
+
+```js
+{
+  ok: true,
+  songs: [{ ... song document ... }, { ... song document ... }]
+}
+```
+
+### POST /choir/songPartName
+
+Add a song partName to the `partNames` array within a song document.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partNameId` - the id of the song partName - if matches existing partNameId, that object will be updated, otherwise - new array element will be added and an ID will be generated
+- `name` - the name of the part (required)
+
+### DELETE /choir/songPartName
+
+Deletes a partName from a song document
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partNameId` - the id of the song partName (required)
+
+### POST /choir/songpart
+
+Insert/update a song part
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of the part (required for updates, if omitted a new song part is created)
+- `partNameId` - the id of the part name
+- `partName` - name of the part e.g. drums, alto
+- `partType` - one of `backing`/`reference`/`rendition`
+- `userId` - the id of the user (required for new parts)
+- `userName` - the name of the user (required for new parts)
+- `offset` - the number of milliseconds after the reference part that this recording started (default 0)
+- `frontendOffset` - the number of milliseconds after the reference part that this recording started according to the user (default 0)
+- `aspectRadio` - the aspect ratio of the video e.g. `4:3`
+- `hidden` - boolean indicating whether this part is to be hidden in the final mix e.g. `false`
+- `audio` - boolean, if true indicates this song part is audio only. default `false`
+- `volume` - number representing the volume of the song part default `1.0`
+
+Returns
+
+```js
+{
+  ok: true,
+  partId: '<songpart id>'
+}
+```
+
+### POST /choir/songpart/upload
+
+Allows the upload of a song part's video file by creating a presigned URL that can be used by the front-end to upload the song part without having access to COS.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of the part (required)
+- `extension` - the file extension (required) e.g. 'webm'
+
+Returns:
+
+```js
+{
+  ok: true,
+  method: 'PUT',
+  url: 'https://some.url.com/path/key',
+  bucket: 'mybucket',
+  key: 'x+y+z.webm'
+}
+```
+
+### POST /choir/songpart/download
+
+Allows the download of a song part's video file by creating a presigned URL that can be used by the front-end to fetch the song part without having access to COS.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of the part (required)
+
+Returns:
+
+```js
+{
+  ok: true,
+  method: 'GET',
+  url: 'https://some.url.com/path/key',
+  bucket: 'mybucket',
+  key: 'x+y+z.webm'
+}
+```
+
+### GET /choir/songpart
+
+Get a single songpart
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of the part (required)
+
+Returns
+
+```js
+{
+  ok: true,
+  part: { ... part doc ... }'
+}
+```
+
+
+### DELETE /choir/songpart
+
+Delete a song part
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of the part (required)
+
+Returns
+
+```js
+{
+  ok: true
+}
+```
+
+### GET /choir/songparts
+
+Get all parts of a song
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partNameId` - if supplied, only parts with matching `partNameId`s will be returned
+
+Returns
+
+```js
+{
+  ok: true,
+  parts: [{ ... part doc ... }, { ... part doc ... }]
+}
+```
+
+## Invitations
+
+### POST /invitation
+
+Parameters:
+
+- `creator` - the id of the user who generated the invitation. (required)
+- `invitee` - the email of the person being invited 
+- `choirId` - the choir the invitee is being invited to join
+- `userId` - the id of the user who needs a password reset
+
+Returns:
+
+```js
+{
+  ok: true,
+  id: "<INVITEID">
+}
+```
+
+### GET /invitation
+
+Parameters:
+
+- `inviteId` - the id of the invitation
+
+Returns:
+
+```js
+{
+   ok: true,
+   invitation: {
+     ... invitation object ...
+   }
+}
+```
+
+Error responses
+
+- `404` - invitation not found
+- `498` - invitation exipred
+
+### GET /invitation/list
+
+Parameters: none
+
+Returns:
+
+```js
+{
+   ok: true,
+   invitations: [{..}, {..}]
+}
+```
+
+### DELETE /invitation
+
+Parameters: 
+
+- `inviteId` - the id of the invitation
+
+Returns:
+
+```js
+{
+   ok: true
+}
+```
+
+Error responses
+
+- `400` - missing mandatory parameter
+- `404` - invitation not found
+
+## Render
+
+### POST /render
+
+Update the status of a render job.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of song part that triggered the render (required)
+- `status` - one of `new`/`converted`/`aligned`/`rendered`/`composited`/`done` (default `new`)
+
+Returns:
+
+```js
+{
+  ok: true
+}
+```
+
+### GET /render
+
+Check the status of a render job.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+- `partId` - the id of song part that triggered the render
+
+Returns:
+
+```js
+{
+   ok: true,
+   render: {
+      choirId: 'x',
+      songId: 'y',
+      partId: 'z', // or null
+      status: 'new',
+      date: '2020-08-29T10:20:59.000Z'
+   }
+}
+```
+
+### GET /render/done
+
+Get completed render jobs for a given song. Returns up to fifty render jobs - newest first.
+
+Parameters:
+
+- `choirId` - the id of the choir (required)
+- `songId` - the id of the song (required)
+
+Returns:
+
+```js
+{
+   ok: true,
+   renders: [{
+      choirId: 'x',
+      songId: 'y',
+      partId: 'z',
+      status: 'new',
+      date: '2020-08-29T10:20:59.000Z'
+   }]
+}
+```
