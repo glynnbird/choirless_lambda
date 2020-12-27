@@ -21,7 +21,7 @@ const handler = async (opts) => {
   const userId = opts.userId
   if (!userId) {
     return {
-      body: { ok: false, message: 'missing mandatory parameter userId' },
+      body: JSON.stringify({ ok: false, message: 'missing mandatory parameter userId' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -49,7 +49,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }
