@@ -32,6 +32,8 @@ test('postRender - missing parameters #1', async () => {
     choirId: 'a'
   }
   const response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -41,6 +43,8 @@ test('postRender - missing parameters #2', async () => {
     songId: 'b'
   }
   const response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -52,6 +56,8 @@ test('postRender - create render status', async () => {
     partId: 'xyz789'
   }
   let response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -61,6 +67,8 @@ test('postRender - create render status', async () => {
     partId: 'abc123'
   }
   response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -70,11 +78,15 @@ test('postRender - create render status', async () => {
     partId: ''
   }
   response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
   await sleep(1000)
   response = await getRender({ choirId: 'a', songId: 'b' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.render).toBe('object')
@@ -83,6 +95,8 @@ test('postRender - create render status', async () => {
 
 test('getRender - check non-existant song', async () => {
   const response = await getRender({ choirId: 'a', songId: 'nothing' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
@@ -95,10 +109,14 @@ test('postRender - updater status #1', async () => {
     status: 'converted'
   }
   let response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   await sleep(1000)
   response = await getRender({ choirId: 'a', songId: 'b' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.render).toBe('object')
@@ -113,10 +131,14 @@ test('postRender - updater status #2', async () => {
     status: 'aligned'
   }
   let response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   await sleep(1000)
   response = await getRender({ choirId: 'a', songId: 'b' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.render).toBe('object')
@@ -131,10 +153,14 @@ test('postRender - updater status #3', async () => {
     status: 'rendered'
   }
   let response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   await sleep(1000)
   response = await getRender({ choirId: 'a', songId: 'b' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.render).toBe('object')
@@ -148,10 +174,14 @@ test('postRender - updater status #4', async () => {
     status: 'done'
   }
   let response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   await sleep(1000)
   response = await getRender({ choirId: 'a', songId: 'b' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.render).toBe('object')
@@ -166,6 +196,8 @@ test('postRender - invalid status', async () => {
     status: 'sausages'
   }
   const response = await postRender(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })

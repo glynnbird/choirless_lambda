@@ -21,7 +21,7 @@ const handler = async (opts) => {
   // extract parameters
   if (!opts.choirId) {
     return {
-      body: { ok: false, message: 'missing mandatory parameters' },
+      body: JSON.stringify({ ok: false, message: 'missing mandatory parameters' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -54,7 +54,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

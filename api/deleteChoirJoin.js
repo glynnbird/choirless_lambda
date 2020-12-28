@@ -22,7 +22,7 @@ const handler = async (opts) => {
   // check choirType is valid
   if (!opts.choirId || !opts.userId) {
     return {
-      body: { ok: false, message: 'invalid parameterss' },
+      body: JSON.stringify({ ok: false, message: 'invalid parameterss' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -44,7 +44,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

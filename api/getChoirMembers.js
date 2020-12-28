@@ -22,7 +22,7 @@ const handler = async (opts) => {
   const choirId = opts.choirId
   if (!choirId) {
     return {
-      body: { ok: false, message: 'missing mandatory parameter choirId' },
+      body: JSON.stringify({ ok: false, message: 'missing mandatory parameter choirId' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -56,7 +56,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

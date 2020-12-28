@@ -32,7 +32,7 @@ const handler = async (opts) => {
   // check choirType is valid
   if (opts.choirType && !['private', 'public'].includes(opts.choirType)) {
     return {
-      body: { ok: false, message: 'invalid choirType' },
+      body: JSON.stringify({ ok: false, message: 'invalid choirType' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -48,7 +48,7 @@ const handler = async (opts) => {
       doc.choirType = opts.choirType ? opts.choirType : doc.choirType
     } catch (e) {
       return {
-        body: { ok: false, message: 'choir not found' },
+        body: JSON.stringify({ ok: false, message: 'choir not found' }),
         statusCode: 404,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -56,7 +56,7 @@ const handler = async (opts) => {
   } else {
     if (!opts.name || !opts.createdByUserId || !opts.createdByName || !opts.choirType) {
       return {
-        body: { ok: false, message: 'missing mandatory parameters name/createdByUserId/createdByName/choirType' },
+        body: JSON.stringify({ ok: false, message: 'missing mandatory parameters name/createdByUserId/createdByName/choirType' }),
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -103,7 +103,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

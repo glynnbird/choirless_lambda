@@ -53,6 +53,8 @@ beforeAll(async () => {
     password: 'sausages'
   }
   let response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   bob = response.body.userId
@@ -63,6 +65,8 @@ beforeAll(async () => {
     password: 'cakes'
   }
   response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   sue = response.body.userId
@@ -73,6 +77,8 @@ beforeAll(async () => {
     password: 'rabbits'
   }
   response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   rita = response.body.userId
 
@@ -82,6 +88,8 @@ beforeAll(async () => {
     password: 'flowers'
   }
   response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   frank = response.body.userId
 
@@ -99,6 +107,8 @@ test('postChoir - invalid parameters', async () => {
     choirType: 'public'
   }
   let response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
@@ -108,6 +118,8 @@ test('postChoir - invalid parameters', async () => {
     choirType: 'public'
   }
   response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
@@ -117,6 +129,8 @@ test('postChoir - invalid parameters', async () => {
     choirType: 'public'
   }
   response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
@@ -126,6 +140,8 @@ test('postChoir - invalid parameters', async () => {
     createdByUserId: rita
   }
   response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -139,6 +155,8 @@ test('postChoir - create choir', async () => {
     choirType: 'public'
   }
   let response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   london = response.body.choirId
@@ -151,6 +169,8 @@ test('postChoir - create choir', async () => {
     choirType: 'private'
   }
   response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   bristol = response.body.choirId
@@ -163,6 +183,8 @@ test('postChoir - create choir', async () => {
     choirType: 'public'
   }
   response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   manchester = response.body.choirId
@@ -170,6 +192,8 @@ test('postChoir - create choir', async () => {
 
 test('getChoir - fetch choir - london', async () => {
   const response = await getChoir({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choir.choirId).toBe(london)
@@ -184,6 +208,8 @@ test('getChoir - fetch choir - london', async () => {
 
 test('getChoir - fetch choir - bristol', async () => {
   const response = await getChoir({ choirId: bristol })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choir.choirId).toBe(bristol)
@@ -198,6 +224,8 @@ test('getChoir - fetch choir - bristol', async () => {
 
 test('getChoir - fetch choir - manchester', async () => {
   const response = await getChoir({ choirId: manchester })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choir.choirId).toBe(manchester)
@@ -216,9 +244,13 @@ test('postChoir - edit name', async () => {
     choirId: london
   }
   let response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   response = await getChoir({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choir.name).toBe(obj.name)
@@ -230,9 +262,13 @@ test('postChoir - edit description', async () => {
     choirId: london
   }
   let response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   response = await getChoir({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choir.description).toBe(obj.description)
@@ -244,9 +280,13 @@ test('postChoir - edit choirType', async () => {
     choirId: london
   }
   let response = await postChoir(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   response = await getChoir({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choir.choirType).toBe(obj.choirType)
@@ -254,16 +294,22 @@ test('postChoir - edit choirType', async () => {
 
 test('getChoirMembers - check membership', async () => {
   let response = await getChoirMembers({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.members.length).toBe(1)
 
   response = await getChoirMembers({ choirId: bristol })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.members.length).toBe(1)
 
   response = await getChoirMembers({ choirId: manchester })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.members.length).toBe(1)
@@ -277,6 +323,8 @@ test('join choir - new members', async () => {
     memberType: 'member'
   }
   let response = await postChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -287,6 +335,8 @@ test('join choir - new members', async () => {
     memberType: 'member'
   }
   response = await postChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -297,6 +347,8 @@ test('join choir - new members', async () => {
     memberType: 'member'
   }
   response = await postChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -308,6 +360,8 @@ test('join choir - new members', async () => {
     memberType: 'member'
   }
   response = await postChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(409)
   expect(response.body.ok).toBe(false)
 
@@ -319,6 +373,8 @@ test('join choir - new members', async () => {
     memberType: 'leader'
   }
   response = await postChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -329,6 +385,8 @@ test('join choir - new members', async () => {
     memberType: 'member'
   }
   response = await postChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 })
@@ -340,6 +398,8 @@ test('remove from choir - delete members', async () => {
     choirId: london
   }
   let response = await deleteChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -349,22 +409,30 @@ test('remove from choir - delete members', async () => {
     choirId: london
   }
   response = await deleteChoirJoin(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
 
 test('getChoirMembers - check membership again', async () => {
   let response = await getChoirMembers({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.members.length).toBe(3)
 
   response = await getChoirMembers({ choirId: bristol })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.members.length).toBe(1)
 
   response = await getChoirMembers({ choirId: manchester })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.members.length).toBe(2)
@@ -377,6 +445,8 @@ test('postChoirSong - invalid paramters', async () => {
     description: 'by The Kinks'
   }
   let response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
@@ -386,6 +456,8 @@ test('postChoirSong - invalid paramters', async () => {
     description: 'by The Kinks'
   }
   response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
@@ -395,6 +467,8 @@ test('postChoirSong - invalid paramters', async () => {
     description: 'by The Kinks'
   }
   response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -407,6 +481,8 @@ test('postChoirSong - create songs', async () => {
     description: 'by The Kinks'
   }
   let response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   song1 = response.body.songId
@@ -418,6 +494,8 @@ test('postChoirSong - create songs', async () => {
     description: 'by The Beatles'
   }
   response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   song2 = response.body.songId
@@ -425,11 +503,15 @@ test('postChoirSong - create songs', async () => {
 
 test('getChoirSong - fetch song', async () => {
   let response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.name).toBe('Waterloo Sunset')
 
   response = await getChoirSong({ choirId: london, songId: song2 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.name).toBe('Love Me Do')
@@ -443,11 +525,15 @@ test('postChoirSong - edit song', async () => {
     description: 'by The Kinks!'
   }
   let response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   song1 = response.body.songId
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.name).toBe(obj.name)
@@ -457,11 +543,15 @@ test('postChoirSong - edit song', async () => {
 
 test('getChoirSongs - edit song', async () => {
   let response = await getChoirSongs({ choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songs.length).toBe(2)
 
   response = await getChoirSongs({ choirId: manchester })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songs.length).toBe(0)
@@ -469,11 +559,15 @@ test('getChoirSongs - edit song', async () => {
 
 test('postChoirSongPartName - add part name', async () => {
   let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'abc123', name: 'tenor' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -482,11 +576,15 @@ test('postChoirSongPartName - add part name', async () => {
 
 test('postChoirSongPartName - add another partname name', async () => {
   let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'def456', name: 'soprano' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -495,11 +593,15 @@ test('postChoirSongPartName - add another partname name', async () => {
 
 test('postChoirSongPartName - add another partname name', async () => {
   let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'ghi789', name: 'alto' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -508,11 +610,15 @@ test('postChoirSongPartName - add another partname name', async () => {
 
 test('postChoirSongPartName - add another another partname name', async () => {
   let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'yyy', name: 'backing' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -521,11 +627,15 @@ test('postChoirSongPartName - add another another partname name', async () => {
 
 test('postChoirSongPartName - modify partname name', async () => {
   let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'def456', name: 'metzosoprano' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -534,11 +644,15 @@ test('postChoirSongPartName - modify partname name', async () => {
 
 test('postChoirSongPartName - add another another partname name - auto gen id', async () => {
   let response = await postChoirSongPartName({ choirId: london, songId: song1, name: 'harmonies' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -547,29 +661,39 @@ test('postChoirSongPartName - add another another partname name - auto gen id', 
 
 test('postChoirSongPartName - missing parameters 1', async () => {
   const response = await postChoirSongPartName({ songId: song1, name: 'metzosoprano' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('postChoirSongPartName - missing parameters 2', async () => {
   const response = await postChoirSongPartName({ choirId: london, name: 'metzosoprano' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('postChoirSongPartName - missing parameters 3', async () => {
   const response = await postChoirSongPartName({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPartName - delete partname', async () => {
   let response = await deleteChoirSongPartName({ choirId: london, songId: song1, partNameId: 'yyy' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songId).toBe(song1)
 
   response = await getChoirSong({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.songId).toBe(song1)
@@ -578,24 +702,32 @@ test('deleteChoirSongPartName - delete partname', async () => {
 
 test('deleteChoirSongPartName - invalid partNameId', async () => {
   const response = await deleteChoirSongPartName({ choirId: london, songId: song1, partNameId: 'xyz' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPartName - missing parameters 1', async () => {
   const response = await deleteChoirSongPartName({ songId: song1, partNameId: 'xyz' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPartName - missing parameters 2', async () => {
   const response = await deleteChoirSongPartName({ choirId: london, partNameId: 'xyz' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPartName - missing parameters 3', async () => {
   const response = await deleteChoirSongPartName({ choirId: london, songId: song1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -611,6 +743,8 @@ test('postChoirSongPart - create part', async () => {
     userName: 'Rita'
   }
   let response = await postChoirSongPart(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   part1 = response.body.partId
@@ -625,6 +759,8 @@ test('postChoirSongPart - create part', async () => {
     userName: 'Sue'
   }
   response = await postChoirSongPart(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   part2 = response.body.partId
@@ -641,6 +777,8 @@ test('postChoirSongPart - create part', async () => {
     aspectRatio: '1024:768'
   }
   response = await postChoirSongPart(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   part3 = response.body.partId
@@ -648,6 +786,8 @@ test('postChoirSongPart - create part', async () => {
 
 test('getChoirSongPart - get part', async () => {
   let response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
@@ -655,6 +795,8 @@ test('getChoirSongPart - get part', async () => {
   expect(response.body.part.partType).toBe('reference')
 
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part2 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Sue')
@@ -662,6 +804,8 @@ test('getChoirSongPart - get part', async () => {
   expect(response.body.part.partType).toBe('reference')
 
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part3 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Bob')
@@ -673,6 +817,8 @@ test('getChoirSongPart - get part', async () => {
 
 test('postChoirSongPart - update part', async () => {
   let response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
@@ -686,8 +832,12 @@ test('postChoirSongPart - update part', async () => {
   // edit offset
   doc.offset = 150
   response = await postChoirSongPart(doc)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
   expect(response.body.part.partName).toBe('tenor')
@@ -700,8 +850,12 @@ test('postChoirSongPart - update part', async () => {
   doc.partType = 'backing'
   doc.aspectRatio = '400:300'
   response = await postChoirSongPart(doc)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
   expect(response.body.part.partName).toBe('tenor')
@@ -715,8 +869,12 @@ test('postChoirSongPart - update part', async () => {
   // edit hidden
   doc.hidden = true
   response = await postChoirSongPart(doc)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
   expect(response.body.part.partName).toBe('tenor')
@@ -731,8 +889,12 @@ test('postChoirSongPart - update part', async () => {
   // edit hidden
   doc.frontendOffset = 200
   response = await postChoirSongPart(doc)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
   expect(response.body.part.partName).toBe('tenor')
@@ -747,8 +909,12 @@ test('postChoirSongPart - update part', async () => {
   // edit audio
   doc.audio = true
   response = await postChoirSongPart(doc)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
   expect(response.body.part.partName).toBe('tenor')
@@ -763,8 +929,12 @@ test('postChoirSongPart - update part', async () => {
   // edit volume
   doc.volume = 0.26
   response = await postChoirSongPart(doc)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   response = await getChoirSongPart({ choirId: london, songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.body.ok).toBe(true)
   expect(response.body.part.userName).toBe('Rita')
   expect(response.body.part.partName).toBe('tenor')
@@ -779,11 +949,15 @@ test('postChoirSongPart - update part', async () => {
 
 test('getChoirSongParts - get all parts', async () => {
   let response = await getChoirSongParts({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.parts.length).toBe(3)
 
   response = await getChoirSongParts({ songId: song2, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.parts.length).toBe(0)
@@ -791,6 +965,8 @@ test('getChoirSongParts - get all parts', async () => {
 
 test('getChoirSongParts - get parts matching partNameId', async () => {
   const response = await getChoirSongParts({ songId: song1, choirId: london, partNameId: 'abc123' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.parts.length).toBe(1)
@@ -798,6 +974,8 @@ test('getChoirSongParts - get parts matching partNameId', async () => {
 
 test('getUserChoirs - get choir memberships', async () => {
   const response = await getUserChoirs({ userId: rita })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choirs.length).toBe(2)
@@ -805,6 +983,8 @@ test('getUserChoirs - get choir memberships', async () => {
 
 test('getUserChoirs - get choir memberships', async () => {
   const response = await getUserChoirs({ userId: 'frank' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.choirs.length).toBe(0)
@@ -819,6 +999,8 @@ test('postChoirSong - create song with parts', async () => {
     partNames: ['bass', 'guitar', 'organ', 'vocal', 'backing vocal']
   }
   let response = await postChoirSong(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   const songId = response.body.songId
@@ -827,6 +1009,8 @@ test('postChoirSong - create song with parts', async () => {
   expect(typeof response.body.song.partNames[0]).toBe('object')
 
   response = await getChoirSong({ choirId: london, songId: songId })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.song.name).toBe('One Love')
@@ -837,11 +1021,15 @@ test('postChoirSong - create song with parts', async () => {
 
 test('deleteChoirSongPart - delete song part', async () => {
   let response = await deleteChoirSongPart({ songId: song1, choirId: london, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
   // check there are now 2 parts
   response = await getChoirSongParts({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.parts.length).toBe(2)
@@ -849,41 +1037,55 @@ test('deleteChoirSongPart - delete song part', async () => {
 
 test('deleteChoirSongPart - invalid partId', async () => {
   const response = await deleteChoirSongPart({ songId: song1, choirId: london, partId: 'nonsense' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPart - missing parameters #1', async () => {
   const response = await deleteChoirSongPart({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPart - missing parameters #2', async () => {
   const response = await deleteChoirSongPart({ songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSongPart - missing parameters #3', async () => {
   const response = await deleteChoirSongPart({ choirId: london, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('deleteChoirSong - delete song', async () => {
   let response = await deleteChoirSong({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
   // check song doesn't exist
   response = await getChoirSong({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
 
 test('postChoirSongPartUpload - upload presign', async () => {
   const response = await postChoirSongPartUpload({ songId: song1, choirId: london, partId: part1, extension: 'webm' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.url).toBe('string')
@@ -893,24 +1095,34 @@ test('postChoirSongPartUpload - upload presign', async () => {
 
 test('postChoirSongPartUpload - upload missing params', async () => {
   let response = await postChoirSongPartUpload({ choirId: london, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
   response = await postChoirSongPartUpload({ songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
   response = await postChoirSongPartUpload({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
   response = await postChoirSongPartUpload({ })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('postChoirSongPartDownload - download presign', async () => {
   const response = await postChoirSongPartDownload({ songId: song1, choirId: london, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(typeof response.body.url).toBe('string')
@@ -920,18 +1132,26 @@ test('postChoirSongPartDownload - download presign', async () => {
 
 test('postChoirSongPartDownload - download missing params', async () => {
   let response = await postChoirSongPartDownload({ choirId: london, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
   response = await postChoirSongPartDownload({ songId: song1, partId: part1 })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
   response = await postChoirSongPartDownload({ songId: song1, choirId: london })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 
   response = await postChoirSongPartDownload({ })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })

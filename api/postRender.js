@@ -23,7 +23,7 @@ const handler = async (opts) => {
   // check for mandatory fields
   if (!opts.choirId || !opts.songId) {
     return {
-      body: { ok: false, message: 'missing mandatory fields' },
+      body: JSON.stringify({ ok: false, message: 'missing mandatory fields' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -35,7 +35,7 @@ const handler = async (opts) => {
   }
   if (!['new', 'converted', 'aligned', 'rendered', 'composited', 'done'].includes(opts.status)) {
     return {
-      body: { ok: false, message: 'invalid status' },
+      body: JSON.stringify({ ok: false, message: 'invalid status' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -64,7 +64,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

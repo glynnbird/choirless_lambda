@@ -35,6 +35,8 @@ test('postUserLogin - missing parameters #1', async () => {
     email: 'frank@aol.com'
   }
   const response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -45,6 +47,8 @@ test('postUserLogin - missing parameters #2', async () => {
     password: 'pies'
   }
   const response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -55,6 +59,8 @@ test('postUserLogin - missing parameters #3', async () => {
     password: 'pies'
   }
   const response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -67,6 +73,8 @@ test('postUserLogin - invalid userType', async () => {
     userType: 'superuser'
   }
   const response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
@@ -78,6 +86,8 @@ test('postUser - create user', async () => {
     password: 'sausages'
   }
   let response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   bob = response.body.userId
@@ -88,6 +98,8 @@ test('postUser - create user', async () => {
     password: 'cakes'
   }
   response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   sue = response.body.userId
@@ -99,20 +111,28 @@ test('postUser - create user', async () => {
     userType: 'admin'
   }
   response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   rita = response.body.userId
 })
 
 test('getUser - fetch user', async () => {
   let response = await getUser({ userId: bob })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.userType).toBe('regular')
   response = await getUser({ userId: sue })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.userType).toBe('regular')
   response = await getUser({ userId: rita })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.userType).toBe('admin')
@@ -125,6 +145,8 @@ test('postUser - create user - duplicate check', async () => {
     password: 'battenburg'
   }
   let response = await postUser(obj)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 
@@ -134,24 +156,32 @@ test('postUser - create user - duplicate check', async () => {
     password: 'garibaldi'
   }
   response = await postUser(obj2)
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(409)
   expect(response.body.ok).toBe(false)
 })
 
 test('getUser - fetch user - invalid user', async () => {
   const response = await getUser({ userId: 'frank' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
 
 test('getUser - fetch user - missing userId', async () => {
   const response = await getUser({})
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('postUserLogin - login user', async () => {
   const response = await postUserLogin({ email: 'rita@aol.com', password: 'rabbits' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.type).toBe('user')
@@ -164,42 +194,56 @@ test('postUserLogin - login user', async () => {
 
 test('postUserLogin - login user - invalid user', async () => {
   const response = await postUserLogin({ email: 'frita@aol.com', password: 'rabbits' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(403)
   expect(response.body.ok).toBe(false)
 })
 
 test('postUserLogin - login user - wrong password', async () => {
   const response = await postUserLogin({ email: 'rita@aol.com', password: 'rabbitss' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(403)
   expect(response.body.ok).toBe(false)
 })
 
 test('postUser - change name', async () => {
   const response = await postUser({ userId: rita, name: 'Rita Smith' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 })
 
 test('postUser - change email', async () => {
   const response = await postUser({ userId: rita, email: 'rita2@aol.com' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 })
 
 test('postUser - change password', async () => {
   const response = await postUser({ userId: rita, password: 'rabbits2' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 })
 
 test('postUser - change userType', async () => {
   const response = await postUser({ userId: rita, userType: 'regular' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 })
 
 test('postUserLogin - login user after changes', async () => {
   const response = await postUserLogin({ email: 'rita2@aol.com', password: 'rabbits2' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.type).toBe('user')
@@ -213,12 +257,16 @@ test('postUserLogin - login user after changes', async () => {
 
 test('postUser - change verified', async () => {
   const response = await postUser({ userId: rita, verified: true })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
 })
 
 test('postUserLogin - login user after verification', async () => {
   const response = await postUserLogin({ email: 'rita2@aol.com', password: 'rabbits2' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.type).toBe('user')
@@ -234,6 +282,8 @@ test('postUserLogin - login user after verification', async () => {
 
 test('getUser - get profile', async () => {
   const response = await getUser({ userId: rita })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.type).toBe('user')
@@ -249,18 +299,24 @@ test('getUser - get profile', async () => {
 
 test('getUser - get profile - invalid user', async () => {
   const response = await getUser({ userId: 'frank' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })
 
 test('postUser - change email - duplicate user check', async () => {
   const response = await postUser({ userId: rita, email: 'bob@aol.com' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(409)
   expect(response.body.ok).toBe(false)
 })
 
 test('getUserByEmail - get profile', async () => {
   const response = await getUserByEmail({ email: 'rita2@aol.com' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.user.type).toBe('user')
@@ -276,12 +332,16 @@ test('getUserByEmail - get profile', async () => {
 
 test('getUserByEmail - missing email', async () => {
   const response = await getUserByEmail({ })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(400)
   expect(response.body.ok).toBe(false)
 })
 
 test('getUserByEmail - invalid email', async () => {
   const response = await getUserByEmail({ email: 'rachel@friends.com' })
+  expect(typeof response.body).toBe('string')
+  response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(404)
   expect(response.body.ok).toBe(false)
 })

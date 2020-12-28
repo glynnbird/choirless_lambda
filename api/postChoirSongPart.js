@@ -46,7 +46,7 @@ const handler = async (opts) => {
       partId = opts.partId
     } catch (e) {
       return {
-        body: { ok: false, message: 'song part not found' },
+        body: JSON.stringify({ ok: false, message: 'song part not found' }),
         statusCode: 404,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -54,7 +54,7 @@ const handler = async (opts) => {
   } else {
     if (!opts.choirId || !opts.songId || !opts.userId || !opts.userName) {
       return {
-        body: { ok: false, message: 'missing mandatory parameters' },
+        body: JSON.stringify({ ok: false, message: 'missing mandatory parameters' }),
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -95,7 +95,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

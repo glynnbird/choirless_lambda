@@ -27,7 +27,7 @@ const handler = async (opts) => {
   // check choirType is valid
   if (!opts.choirId || !opts.userId || !opts.name || !opts.memberType || !['leader', 'member'].includes(opts.memberType)) {
     return {
-      body: { ok: false, message: 'invalid parameterss' },
+      body: JSON.stringify({ ok: false, message: 'invalid parameterss' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -41,7 +41,7 @@ const handler = async (opts) => {
     // If they are of the same member type, we needn't do anything else
     if (doc.memberType === opts.memberType) {
       return {
-        body: { ok: false, reason: 'already a member' },
+        body: JSON.stringify({ ok: false, reason: 'already a member' }),
         statusCode: 409,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -76,7 +76,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }

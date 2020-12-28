@@ -39,7 +39,7 @@ const handler = async (opts) => {
   // check userType is valid
   if (opts.userType && !['regular', 'admin'].includes(opts.userType)) {
     return {
-      body: { ok: false, message: 'invalid userType' },
+      body: JSON.stringify({ ok: false, message: 'invalid userType' }),
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -59,7 +59,7 @@ const handler = async (opts) => {
       if (opts.email && opts.email !== doc.email) {
         if (await userExists(opts.email)) {
           return {
-            body: { ok: false, message: 'duplicate user' },
+            body: JSON.stringify({ ok: false, message: 'duplicate user' }),
             statusCode: 409,
             headers: { 'Content-Type': 'application/json' }
           }
@@ -73,7 +73,7 @@ const handler = async (opts) => {
       doc.verified = !!opts.verified
     } catch (e) {
       return {
-        body: { ok: false, message: 'user not found' },
+        body: JSON.stringify({ ok: false, message: 'user not found' }),
         statusCode: 404,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -82,7 +82,7 @@ const handler = async (opts) => {
     // new user creation
     if (!opts.name || !opts.password || !opts.email) {
       return {
-        body: { ok: false, message: 'missing mandatory parameters name/password/email' },
+        body: JSON.stringify({ ok: false, message: 'missing mandatory parameters name/password/email' }),
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -91,7 +91,7 @@ const handler = async (opts) => {
     // first check that user with this email doesn't already exist
     if (await userExists(opts.email)) {
       return {
-        body: { ok: false, message: 'duplicate user' },
+        body: JSON.stringify({ ok: false, message: 'duplicate user' }),
         statusCode: 409,
         headers: { 'Content-Type': 'application/json' }
       }
@@ -129,7 +129,7 @@ const handler = async (opts) => {
 
   // return API response
   return {
-    body: body,
+    body: JSON.stringify(body),
     statusCode: statusCode,
     headers: { 'Content-Type': 'application/json' }
   }
