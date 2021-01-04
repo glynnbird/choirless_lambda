@@ -1,4 +1,5 @@
 #!/bin/bash
+rm python.zip
 rm -rf python/
 mkdir python
 python -m venv choirless
