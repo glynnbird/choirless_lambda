@@ -2,7 +2,7 @@
 
 ## User
 
-### GET /user
+### POST /getUser
 
 Fetch a user by known userId.
 
@@ -19,7 +19,7 @@ Returns
 }
 ```
 
-### POST /user
+### POST /postUser
 
 Create a new user or edit an existing one.
 
@@ -43,7 +43,7 @@ Returns:
 
 > Note: if an attempt is made to create/edit a user with an email that already exists in the database, this API will provide a `409` response.
 
-### POST /user/login
+### POST /postUserLogin
 
 Log in a user with a supplied email and password. If the user exists and the password checks out, the user profile is returned.
 
@@ -63,7 +63,7 @@ Returns:
 }
 ```
 
-### GET /user/choirs
+### POST /getUserChoirs
 
 Get a list of the choirs that a user is a member of
 
@@ -80,7 +80,7 @@ Returns:
 }
 ```
 
-### GET /user/byemail
+### POST /getUserByEmail
 
 Get a user from their email address
 
@@ -99,7 +99,7 @@ Returns:
 
 ## Choir
 
-### GET /choir
+### POST /getChoir
 
 Fetch a choir by known choirId.
 
@@ -116,7 +116,7 @@ Returns
 }
 ```
 
-### POST /choir
+### POST /postChoir
 
 Create a new choir or edits an existing one.
 
@@ -137,7 +137,7 @@ Returns:
 }
 ```
 
-### GET /choir/members
+### POST /getChoirMembers
 
 Fetch a list of the members of a choir.
 
@@ -154,7 +154,7 @@ Returns
 }
 ```
 
-### POST /choir/join
+### POST /postChoirJoin
 
 Add a user to a choir, or call again to edit the `memberType` e.g. promote member to leader
 
@@ -173,7 +173,7 @@ Returns
 }
 ```
 
-### DELETE /choir/join
+### POST /deleteChoirJoin
 
 Remove a user from a choir
 
@@ -190,7 +190,7 @@ Returns
 }
 ```
 
-### POST /choir/song
+### POST /postChoirSong
 
 Add/Edit a choir's song
 
@@ -211,7 +211,7 @@ Returns
 }
 ```
 
-### GET /choir/song
+### POST /getChoirSong
 
 Get a choir's song by id
 
@@ -229,7 +229,7 @@ Returns
 }
 ```
 
-### DELETE /choir/song
+### POST /deleteChoirSong
 
 Delete a choir's song and all its song parts
 
@@ -246,7 +246,7 @@ Returns
 }
 ```
 
-### GET /choir/songs
+### POST /getChoirSongs
 
 Get a list of a choir's songs in newest first order.
 
@@ -263,7 +263,7 @@ Returns
 }
 ```
 
-### POST /choir/songPartName
+### POST /postChoirSongPartName
 
 Add a song partName to the `partNames` array within a song document.
 
@@ -274,7 +274,7 @@ Parameters:
 - `partNameId` - the id of the song partName - if matches existing partNameId, that object will be updated, otherwise - new array element will be added and an ID will be generated
 - `name` - the name of the part (required)
 
-### DELETE /choir/songPartName
+### POST /deleteChoirSongPartName
 
 Deletes a partName from a song document
 
@@ -284,7 +284,7 @@ Parameters:
 - `songId` - the id of the song (required)
 - `partNameId` - the id of the song partName (required)
 
-### POST /choir/songpart
+### POST /postChoirSongPart
 
 Insert/update a song part
 
@@ -314,7 +314,7 @@ Returns
 }
 ```
 
-### POST /choir/songpart/upload
+### POST /postChoirSongPartUpload
 
 Allows the upload of a song part's video file by creating a presigned URL that can be used by the front-end to upload the song part without having access to COS.
 
@@ -337,7 +337,7 @@ Returns:
 }
 ```
 
-### POST /choir/songpart/download
+### POST /postChoirSongPartDownload
 
 Allows the download of a song part's video file by creating a presigned URL that can be used by the front-end to fetch the song part without having access to COS.
 
@@ -359,7 +359,7 @@ Returns:
 }
 ```
 
-### GET /choir/songpart
+### POST /getChoirSongPart
 
 Get a single songpart
 
@@ -379,7 +379,7 @@ Returns
 ```
 
 
-### DELETE /choir/songpart
+### POST /deleteChoirSongPart
 
 Delete a song part
 
@@ -397,7 +397,7 @@ Returns
 }
 ```
 
-### GET /choir/songparts
+### POST /choirSongPart
 
 Get all parts of a song
 
@@ -418,7 +418,7 @@ Returns
 
 ## Invitations
 
-### POST /invitation
+### POST /postInvitation
 
 Parameters:
 
@@ -436,7 +436,7 @@ Returns:
 }
 ```
 
-### GET /invitation
+### POST /getInvitation
 
 Parameters:
 
@@ -458,7 +458,7 @@ Error responses
 - `404` - invitation not found
 - `498` - invitation exipred
 
-### GET /invitation/list
+### POST /getInvitationList
 
 Parameters: none
 
@@ -471,7 +471,7 @@ Returns:
 }
 ```
 
-### DELETE /invitation
+### POST /deleteInvitation
 
 Parameters: 
 
@@ -492,7 +492,7 @@ Error responses
 
 ## Render
 
-### POST /render
+### POST /postRender
 
 Update the status of a render job.
 
@@ -511,7 +511,7 @@ Returns:
 }
 ```
 
-### GET /render
+### POST /getRender
 
 Check the status of a render job.
 
@@ -536,7 +536,7 @@ Returns:
 }
 ```
 
-### GET /render/done
+### POST /getRenderDone
 
 Get completed render jobs for a given song. Returns up to fifty render jobs - newest first.
 
