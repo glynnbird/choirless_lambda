@@ -2,7 +2,7 @@ from pathlib import Path
 from functools import partial
 import ffmpeg
 
-import boto3 
+import boto3
 
 
 def main(event, context):
@@ -21,19 +21,19 @@ def main(event, context):
 
     # Generate the URL to get 'key-name' from 'bucket-name'
     geturl = s3.generate_presigned_url(
-      ClientMethod='get_object',
-      Params={
-          'Bucket': bucket,
-          'Key': key
-      }
+        ClientMethod='get_object',
+        Params={
+            'Bucket': bucket,
+            'Key': key
+        }
     )
 
     # Generate the URL to get 'key-name' from 'bucket-name'
     puturl = s3.generate_presigned_url(
-      ClientMethod='put_object',
+        ClientMethod='put_object',
         Params={
-          'Bucket': dst_bucket,
-          'Key': key + '.jpg'
+            'Bucket': dst_bucket,
+            'Key': key + '.jpg'
         }
     )
 
