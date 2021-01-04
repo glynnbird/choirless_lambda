@@ -18,7 +18,7 @@ def main(event, context):
     key = event['Records'][0]['s3']['object']['key']
     choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
     bucket = event['Records'][0]['s3']['bucket']['name']
-    print('Running %s on %s/%s' % (context['function_name'], bucket, choir_id))
+    print('Running %s on %s/%s' % (context['function_name'], bucket, key))
 
     # get destination bucket from environment variable
     dst_bucket = os.environ['DEST_BUCKET']
