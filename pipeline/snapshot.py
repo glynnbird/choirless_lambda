@@ -5,20 +5,24 @@ Lambda triggered on addition of an object into an S3 bucket. Converts the video
 file into a JPG snapshot which is written to the target bucket.
 """
 from pathlib import Path
+from urllib.parse import unquote
+
 import os
+import tempfile
 
 import boto3
 
 import ffmpeg
 
+
 def main(event, context):
     '''Converts a video file into a jpg snapshot'''
 
     # extract key and source bucket from incoming event
-    key = event['Records'][0]['s3']['object']['key']
+    key = unquote(event['Records'][0]['s3']['object']['key'])
     choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
     bucket = event['Records'][0]['s3']['bucket']['name']
-    print('Running %s on %s/%s' % (context['function_name'], bucket, key))
+    print('Running snapshot on %s/%s' % (bucket, key))
 
     # get destination bucket from environment variable
     dst_bucket = os.environ['DEST_BUCKET']
@@ -39,28 +43,29 @@ def main(event, context):
         }
     )
 
-    # Generate the URL to get 'key-name' from 'bucket-name'
+    # Generate a temporary filename for the destination file
     keyjpg = key + '.jpg'
-    puturl = s3_client.generate_presigned_url(
-        ClientMethod='put_object',
-        Params={
-          'Bucket': dst_bucket,
-          'Key': key + '.jpg'
-        }
-    )
+    with tempfile.TemporaryDirectory() as tmp:
+        # joing temp directory with our filename
+        path = os.path.join(tmp, keyjpg)
 
-    # read the source video file
-    stream = ffmpeg.input(geturl,
-                          seekable=0)
-    # write a JPEG snapshot to the output bucket
-    out = ffmpeg.output(stream,
-                        puturl,
-                        format='singlejpeg',
-                        method='PUT',
-                        seekable=0,
-                        vframes=1)
-    # stdout, stderr = out.run()
-    out.run()
+        # read the source video file
+        stream = ffmpeg.input(geturl,
+                              seekable=0)
+        # write a JPEG snapshot to temp file
+        out = ffmpeg.output(stream,
+                            path,
+                            format='singlejpeg',
+                            vframes=1)
+
+        # output the  ffmpeg command
+        print(out.compile())
+
+        # run ffmpeg
+        out.run()
+
+        # upload temp file to S3
+        s3_client.upload_file(path, dst_bucket, keyjpg)
 
     # return status dictionary
     ret = {"snapshot_key": keyjpg,
@@ -68,5 +73,4 @@ def main(event, context):
            "song_id": song_id,
            "part_id": part_id,
            "status": "new"}
-
     return ret
