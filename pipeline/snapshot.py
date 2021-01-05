@@ -34,7 +34,7 @@ def main(event, context):
     # Get the service client.
     s3_client = boto3.client('s3')
 
-    # Generate the URL to get 'key-name' from 'bucket-name'
+    # Generate the URL to get key from bucket
     geturl = s3_client.generate_presigned_url(
         ClientMethod='get_object',
         Params={
@@ -46,12 +46,13 @@ def main(event, context):
     # Generate a temporary filename for the destination file
     keyjpg = key + '.jpg'
     with tempfile.TemporaryDirectory() as tmp:
-        # joing temp directory with our filename
+        # join temp directory with our filename
         path = os.path.join(tmp, keyjpg)
 
         # read the source video file
         stream = ffmpeg.input(geturl,
                               seekable=0)
+
         # write a JPEG snapshot to temp file
         out = ffmpeg.output(stream,
                             path,
