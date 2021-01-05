@@ -7,10 +7,11 @@ Lambda functions for the Choirless project.
 - [The Choirless API](api/README.md)
 - [API Reference](api/API.md)
 
-## pipeline
+## Pipeline
+
+The rendering pipeline: a series of ffmpeg-powered Lambdas triggered from S3 put/delete operations.
 
 ![](img/diagram1.jpg)
 ![](img/diagram2.jpg)
 
-The rendering pipeline.
 
