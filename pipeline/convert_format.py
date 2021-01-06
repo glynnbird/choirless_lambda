@@ -23,7 +23,7 @@ def main(event, context):
     key = unquote(event['Records'][0]['s3']['object']['key'])
     choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
     bucket = event['Records'][0]['s3']['bucket']['name']
-    fname = context.get('function_name','')
+    fname = context.get('function_name', '')
     print('Running %s on %s/%s' % (fname, bucket, key))
 
     # get destination bucket from environment variable
