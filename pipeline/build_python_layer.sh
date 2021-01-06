@@ -8,6 +8,7 @@ source choirless/bin/activate
 # pip3 install "git+https://github.com/Choirless/renderer@e0f2c46d5e4b2a34fa67b034f141fb286cffab2a#egg=choirless_lib&subdirectory=python/choirless_lib" -t python
 # https://github.com/kkroening/ffmpeg-python
 pip3 install ffmpeg-python -t ./python
+pip3 install requests -t ./python
 #pip install pandas -t ./python
 deactivate
 zip -r python.zip python/
