@@ -23,7 +23,8 @@ def main(event, context):
     key = unquote(event['Records'][0]['s3']['object']['key'])
     choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
     bucket = event['Records'][0]['s3']['bucket']['name']
-    print('Running snapshot on %s/%s' % (bucket, key))
+    fname = context.get('function_name','')
+    print('Running %s on %s/%s' % (fname, bucket, key))
 
     # get destination bucket from environment variable
     dst_bucket = os.environ['DEST_BUCKET']
@@ -48,7 +49,7 @@ def main(event, context):
     # First probe the file to see if we have audio and/or video streams
     try:
         output = ffmpeg.probe(geturl)
-    except Exception as e:
+    except ffmpeg.Error as e:
         print("ffprobe error", e.stderr)
         return {'error': str(e)}
 
@@ -108,8 +109,8 @@ def main(event, context):
                 max_volume = float(mo.groups()[0])
 
         if high_samples / total_samples < vol_pct:
-            print(
-                f"Input volume is so low, we are muting it {high_samples/total_samples:.2f} above {vol_threshold}")
+            print(f"Input volume is so low, we are muting it "
+                  f"{high_samples/total_samples:.2f} above {vol_threshold}")
             mute = True
 
         target_peak = -2
