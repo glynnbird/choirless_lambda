@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import os
+import json
 import tempfile
 
 import boto3
@@ -22,8 +23,7 @@ def main(event, context):
     key = unquote(event['Records'][0]['s3']['object']['key'])
     choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
     bucket = event['Records'][0]['s3']['bucket']['name']
-    fname = context.get('function_name', '')
-    print('Running %s on %s/%s' % (fname, bucket, key))
+    print('Running on %s/%s' % (bucket, key))
 
     # get destination bucket from environment variable
     dst_bucket = os.environ['DEST_BUCKET']
@@ -70,9 +70,19 @@ def main(event, context):
         s3_client.upload_file(path, dst_bucket, keyjpg)
 
     # return status dictionary
+
+    lambda_client = boto3.client('lambda')
+
     ret = {"snapshot_key": keyjpg,
            "choir_id": choir_id,
            "song_id": song_id,
            "part_id": part_id,
            "status": "new"}
+
+    lambda_client.invoke(
+	FunctionName= os.environ['STATUS_LAMBDA'],
+	Payload = json.dumps(ret),
+	InvocationType = 'Event'
+    )
+
     return ret

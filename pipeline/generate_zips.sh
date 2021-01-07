@@ -4,5 +4,5 @@ for filename in *.py; do
   STUB=`echo $filename | sed 's/.py//g'`
   echo "$STUB"
   rm "${STUB}.zip"
-  zip -r "${STUB}.zip" "${STUB}.py" lib/ 
+  zip -r "${STUB}.zip" "${STUB}.py"  
 done

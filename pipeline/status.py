@@ -10,9 +10,8 @@ from urllib.parse import urljoin
 import requests
 
 
-def main(args):
+def main(args, context):
     '''Posts a render status log via the Choirless API'''
-
     # Tell the API the current render sttus
     try:
         # get passed-in arguments
