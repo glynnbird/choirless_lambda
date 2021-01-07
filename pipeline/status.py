@@ -6,7 +6,6 @@ Uses the Choirless API to record the progress of a render by calling POST /postR
 """
 
 import os
-from urllib.parse import urljoin
 import requests
 
 
@@ -15,7 +14,7 @@ def main(args, context):
     # Tell the API the current render sttus
     try:
         # get passed-in arguments
-        api_url = os.environ['CHOIRLESS_API_URL']
+        api_url = os.environ['CHOIRLESS_API_URL'] + '/postRender'
         choir_id = args.get('choir_id')
         song_id = args.get('song_id')
         part_id = args.get('part_id', None)
@@ -30,7 +29,8 @@ def main(args, context):
         }
         print(payload)
         # make HTTP POST request with application/json header
-        requests.post(urljoin(api_url, 'postRender'), json=payload)
+        print(api_url)
+        requests.post(api_url, json=payload)
         return {'status': 'ok'}
 
     except requests.exceptions.RequestException as e:
