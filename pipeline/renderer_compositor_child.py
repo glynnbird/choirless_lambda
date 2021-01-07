@@ -81,7 +81,7 @@ def main(args):
     top, bottom = calc_bounding_box(row_input_specs)
     margin = 10
 
-    total_output_width, total_output_height = output_spec['size']
+    total_output_width, _ = output_spec['size']
     output_width = total_output_width
     output_height = bottom - top + margin
 
@@ -201,7 +201,7 @@ def main(args):
 
 def specs_for_row(specs, row):
     for spec in specs:
-        x, y = spec.get('position', [-1, -1])
+        _, y = spec.get('position', [-1, -1])
         if y == row:
             yield spec
 
@@ -212,8 +212,8 @@ def calc_bounding_box(specs):
     for spec in specs:
         if 'position' not in spec:
             continue
-        x, y = spec['position']
-        width, height = spec['size']
+        _, y = spec['position']
+        _, height = spec['size']
         # round height down to next even number as that is what the scaler will
         # so
         height = height // 2 * 2
