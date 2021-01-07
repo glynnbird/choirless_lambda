@@ -17,9 +17,6 @@ def helper(x):
 
 def main(args):
 
-    # get destination bucket from environment variable
-    dst_bucket = os.environ['DEST_BUCKET']
-
     # Get the service client.
     s3_client = boto3.client('s3')
 
@@ -30,8 +27,8 @@ def main(args):
     choir_id, song_id, def_id = Path(definition_key).stem.split('+', 3)
 
     definition_bucket = os.environ['DEFINITION_BUCKET']
-    src_bucket = os.environ['CONVERTED_BUCKET']
-    dst_bucket = os.environ['FINAL_PARTS_BUCKET']
+    src_bucket = os.environ['SRC_BUCKET']
+    dst_bucket = os.environ['DEST_BUCKET']
 
     # the compositor to run (audio / video)
     compositor = args['compositor']
