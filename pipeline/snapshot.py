@@ -85,4 +85,15 @@ def main(event, context):
 	InvocationType = 'Event'
     )
 
+    ret = {"key": key,
+           "bucket": bucket,
+           "choir_id": choir_id,
+           "song_id": song_id,
+           "part_id": part_id}
+
+    lambda_client.invoke(
+	FunctionName= os.environ['CONVERT_LAMBDA'],
+	Payload = json.dumps(ret),
+	InvocationType = 'Event'
+    )
     return ret

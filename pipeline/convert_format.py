@@ -5,11 +5,10 @@ Lambda that converts an incoming video into a standard choirless format.
 
 """
 
-import time
+import json
 from pathlib import Path
 import re
 import tempfile
-from urllib.parse import unquote
 import os
 import boto3
 
@@ -20,11 +19,12 @@ def main(event, context):
     '''Converts incoming video into choirless format'''
 
     # extract key and source bucket from incoming event
-    key = unquote(event['Records'][0]['s3']['object']['key'])
-    choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
-    bucket = event['Records'][0]['s3']['bucket']['name']
-    fname = context.get('function_name', '')
-    print('Running %s on %s/%s' % (fname, bucket, key))
+    key = event['key']
+    choir_id = event['choir_id']
+    song_id = event['song_id']
+    part_id = event['part_id']
+    bucket = event['bucket']
+    print('Running on %s/%s' % (bucket, key))
 
     # get destination bucket from environment variable
     dst_bucket = os.environ['DEST_BUCKET']
@@ -164,20 +164,22 @@ def main(event, context):
 
         cmd = pipeline.compile()
         print("ffmpeg command to run: ", cmd)
-        t1 = time.time()
         pipeline.run()
-        t2 = time.time()
 
         # upload temp file to S3
         s3_client.upload_file(path, dst_bucket, output_key)
 
-    ret = {'render_time': int(t2 - t1),
-           'src_key': key,
-           'dst_key': output_key,
-           'choir_id': choir_id,
-           'song_id': song_id,
-           'part_id': part_id,
-           'status': 'converted'
-           }
+    lambda_client = boto3.client('lambda')
+    ret = {
+        "choir_id": choir_id,
+        "song_id": song_id,
+        "part_id": part_id,
+        "status": "converted"}
+
+    lambda_client.invoke(
+        FunctionName=os.environ['STATUS_LAMBDA'],
+        Payload=json.dumps(ret),
+        InvocationType='Event'
+    )
 
     return ret

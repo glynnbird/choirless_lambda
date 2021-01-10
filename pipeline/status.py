@@ -30,7 +30,8 @@ def main(args, context):
         print(payload)
         # make HTTP POST request with application/json header
         print(api_url)
-        requests.post(api_url, json=payload)
+        headers = {'x-api-key': os.environ['CHOIRLESS_API_KEY']}
+        requests.post(api_url, json=payload, headers=headers)
         return {'status': 'ok'}
 
     except requests.exceptions.RequestException as e:
