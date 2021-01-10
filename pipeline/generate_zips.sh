@@ -6,3 +6,5 @@ for filename in *.py; do
   rm "${STUB}.zip"
   zip -r "${STUB}.zip" "${STUB}.py"  
 done
+rm renderer.zip
+zip -r renderer.zip renderer.js

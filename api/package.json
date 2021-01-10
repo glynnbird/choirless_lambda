@@ -18,10 +18,13 @@
   "author": "Glynn Bird <glynn.bird@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.21.1",
+    "boxjam": "0.0.21",
     "debug": "^4.3.1",
     "kuuid": "^0.6.0",
     "moment": "^2.29.1",
-    "nano": "^9.0.1"
+    "nano": "^9.0.1",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "jest": "^26.6.3",

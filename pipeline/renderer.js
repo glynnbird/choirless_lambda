@@ -8,21 +8,14 @@ const reverseString = (str) => {
 }
 
 const handler = async (opts) => {
+  console.log('renderer', opts)
   // s3 client
   s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
   // look for a key in opts and pull songId and choidId from there
-  const key = opts.object_name ? opts.object_name : opts.key
-  let choirId, songId
-  if (key !== undefined) {
-    const parts = key.split('+')
-    choirId = parts[0]
-    songId = parts[1]
-  } else {
-    // get the songid/choirId parameters
-    choirId = opts.choirId
-    songId = opts.songId
-  }
+  const choirId = opts.choir_id
+  const songId = opts.song_id
+
   if (!songId || !choirId) {
     return { ok: false, message: 'missing parameters' }
   }
@@ -41,11 +34,14 @@ const handler = async (opts) => {
   // get the song parts from the API
   const req = {
     method: 'post',
-    baseURL: opts.CHOIRLESS_API_URL,
+    baseURL: process.env.CHOIRLESS_API_URL,
     url: '/getChoirSongParts',
     data: {
       songId: songId,
       choirId: choirId
+    },
+    headers:{
+      'x-api-key': process.env.CHOIRLESS_API_KEY
     },
     responseType: 'json'
   }
@@ -142,9 +138,19 @@ const handler = async (opts) => {
 
     // write the definition to a COS bucket
     const key = [choirId, songId, name].join('+') + '.json'
-    await s3.putObject({ Bucket: opts.definition_bucket, Key: key, Body: JSON.stringify(output) }).promise()
+    await s3.putObject({ Bucket: process.env.DEST_BUCKET, Key: key, Body: JSON.stringify(output) }).promise()
     console.log('written key', key)
-    return { ok: true, choir_id: choirId, song_id: songId, status: 'aligned' }
+
+    // call the status lambda
+    const lambda = new AWS.Lambda();
+    const payload = { ok: true, choir_id: choirId, song_id: songId, status: 'aligned' }
+    const params = {
+      FunctionName: process.env.STATUS_LAMBDA, // the lambda function we are going to invoke
+      InvocationType: 'Event',
+      Payload: JSON.stringify(payload)
+    };
+    await lambda.invoke(params).promise()
+
   } else {
     console.log('Nothing to do')
     return { ok: false }
