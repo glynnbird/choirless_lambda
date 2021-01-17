@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from pathlib import Path
 import tempfile
 
@@ -8,25 +7,25 @@ import boto3
 
 import ffmpeg
 
-import numpy as np
+#import numpy as np
 
 
 def helper(x):
     return {'tag': f"{x['compositor']}-{x['row_num']}"}
 
 
-def main(args):
+def main(args, context):
 
     # Get the service client.
     s3_client = boto3.client('s3')
 
     #args['endpoint'] = args.get('endpoint', args.get('ENDPOINT'))
-    definition_key = args.get('definition_key', args.get('object_name', ''))
+    definition_key = args.get('definition_key', '')
 
     # infer choir, song, and definition id from filename
     choir_id, song_id, def_id = Path(definition_key).stem.split('+', 3)
 
-    definition_bucket = os.environ['DEFINITION_BUCKET']
+    definition_bucket = args.get('bucket')
     src_bucket = os.environ['SRC_BUCKET']
     dst_bucket = os.environ['DEST_BUCKET']
 
@@ -177,21 +176,24 @@ def main(args):
 
         cmd = pipeline.compile()
         print("ffmpeg command to run: ", cmd)
-        t1 = time.time()
         pipeline.run()
-        t2 = time.time()
 
         # write the output file to S3
         s3_client.upload_file(path, dst_bucket, output_key)
 
-    ret = {"status": "ok",
-           "definition_key": definition_key,
-           "dst_key": output_key,
-           "render_time": int(t2 - t1),
-           "row_num": row_num,
-           "run_id": run_id,
-           "rows_hash": rows_hash,
-           }
+    #call the status lambda
+    lambda_client = boto3.client('lambda')
+
+    ret = {
+           "choir_id": choir_id,
+           "song_id": song_id,
+           "status": "rendered"}
+
+    lambda_client.invoke(
+	FunctionName=os.environ['STATUS_LAMBDA'],
+	Payload=json.dumps(ret),
+	InvocationType='Event'
+    )
 
     return ret
 
@@ -204,8 +206,8 @@ def specs_for_row(specs, row):
 
 
 def calc_bounding_box(specs):
-    top = np.inf
-    bottom = -np.inf
+    top = 1000000.0
+    bottom = -1000000.0
     for spec in specs:
         if 'position' not in spec:
             continue

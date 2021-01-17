@@ -2,83 +2,69 @@ const AWS = require('aws-sdk')
 const crypto = require('crypto')
 const { v4: uuidv4 } = require('uuid')
 
-const main = async (opts) => {
-	// s3 client
-	s3 = new AWS.S3({apiVersion: '2006-03-01'});
+const handler = async (event, context) => {
+  // s3 client
+  const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
+  // lambda client
+  const lambda = new AWS.Lambda()
 
-	// look for a key in opts and pull songId and choirId from there
-	const key = opts.object_name ? opts.object_name : opts.key
+  // look for a key in opts and pull songId and choirId from there
+  const key = unescape(event.Records[0].s3.object.key)
+  const bucket = event.Records[0].s3.bucket.name
+  console.log(`Bucket/key ${bucket}/${key}`)
 
-	// Get the definition from the bucket
-	let definition_object = await s3.getObject({ Bucket: opts.definition_bucket, Key: key }).promise()
-	let definition = JSON.parse(definition_object['Body'])
+  // Get the definition from the bucket
+  const definition_object = await s3.getObject({ Bucket: bucket, Key: key }).promise()
+  const definition = JSON.parse(definition_object.Body)
 
-	// if we have scenes then loop per scene, if not add artificial scene in
-	let scenes = []
-	if (definition.scenes == undefined) {
-		scenes.push({
-			"scene_id": 1,
-			"inputs": definition.inputs
-		})
-	} else {
-		scenes = definition.scenes
-	}
+  const run_id = uuidv4().slice(0, 8)
 
-	let actions = []
-	// const ow = openwhisk()
-	let run_id = uuidv4().slice(0, 8)
+  // Get the inputs for this scene
+  const input_specs = definition.inputs
+  // Calculate number of rows
+  let rows = new Set()
+  input_specs.forEach(spec => {
+    const [x, y] = spec.position || [-1, -1]
+    rows.add(y)
+  })
+  rows = Array.from(rows)
+  rows.sort((a, b) => parseInt(a) - parseInt(b))
 
-	scenes.forEach(scene => {
-		// Get the inputs for this scene
-		input_specs = scene.inputs
-		// Calculate number of rows
-		let rows = new Set()
-		input_specs.forEach(spec => {
-			let [x, y] = spec.position || [-1, -1]
-			rows.add(y)
-		})
-		rows = Array.from(rows)
-		rows.sort((a, b) => parseInt(a) - parseInt(b))
+  // Calculate the hash of our rows
+  const rows_str = rows.join('-')
+  const rows_hash = crypto.createHash('sha1').update(rows_str).digest('hex').slice(0, 8)
 
-		let num_rows = rows.length
+  // Invoke all the child actions
+  for (const i in rows) {
+    const row = rows[i]
+    const payload = {
+      row_num: row,
+      run_id: run_id,
+      rows_hash: rows_hash,
+      compositor: 'combined',
+      key: key,
+      bucket: bucket,
+      definition_key: key
+    }
+    console.log(`Payload is ${JSON.stringify(payload)}`)
 
-		// Calculate the hash of our rows
-		let rows_str = rows.join("-")
-		let rows_hash = crypto.createHash('sha1').update(rows_str).digest('hex').slice(0, 8)
+    // call the compositor lambda
+    const params = {
+      FunctionName: process.env.COMPOSITOR_CHILD_LAMBDA, // the lambda function we are going to invoke
+      InvocationType: 'Event',
+      Payload: JSON.stringify(payload)
+    }
+    const ret = await lambda.invoke(params).promise()
+    console.log(`Ret is ${JSON.stringify(ret)}`)
+  }
 
-		// Invoke all the child actions
-		rows.forEach(row => {
-			let params = {
-				"row_num": row,
-				"run_id": run_id,
-				"rows_hash": rows_hash,
-				"compositor": "combined",
-				"key": key,
-				"definition_key": key
-			}
-
-			/*let action = ow.actions.invoke({
-				name: "choirless/renderer_compositor_child",
-				params: params,
-				blocking: false
-			})
-			actions.push(action)*/
-		})
-	})
-
-	// Await for the child calls to all return with their activation ID
-	// let res = await Promise.all(actions)
-	// let activation_ids = res.map(r => { return r.activationId })
-
-	return {
-		"status": "spawned children",
-		"run_id": run_id,
-		"definition_key": key,
-		"activation_ids": activation_ids
-	}
+  return {
+    status: 'spawned children',
+    run_id: run_id,
+    definition_key: key
+  }
 }
 
 module.exports = {
-	main
+  handler
 }
-
