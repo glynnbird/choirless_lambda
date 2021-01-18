@@ -93,7 +93,7 @@ def main(args, context):
     for spec in row_input_specs:
         # Get the part spec and input
         part_id = spec['part_id']
-        part_key = f"{choir_id}+{song_id}+{part_id}.nut"
+        part_key = f"{choir_id}-{song_id}/{part_id}.mp4"
         part_url = s3_client.generate_presigned_url(
             ClientMethod='get_object',
             Params={

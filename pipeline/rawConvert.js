@@ -21,7 +21,7 @@ exports.handler = async function (event, context) {
 
   const params = {
     PipelineId: pipelineId,
-    OutputKeyPrefix: newKey + '/',
+    OutputKeyPrefix: choirId + '-' + songId + '/',
     Input: {
       Key: key
       // FrameRate: ‘auto’,
@@ -31,8 +31,8 @@ exports.handler = async function (event, context) {
       // Container: ‘auto’
     },
     Outputs: [{
-      Key: newKey + '.mp4',
-      ThumbnailPattern: newKey + '-{count}',
+      Key: partId + '.mp4',
+      ThumbnailPattern: partId + '-{count}',
       PresetId: presetId
     }]
   }
