@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 import time
 import hashlib
-
+from urllib.parse import unquote
+import json
 import boto3
 
 import ffmpeg
@@ -12,12 +13,12 @@ import ffmpeg
 # then call process()
 
 
-def main(args):
+def main(args, context):
 
     # Get the service client.
     s3_client = boto3.client('s3')
 
-    key = args.get('key', args.get('object_name', ''))
+    key = unquote(args['Records'][0]['s3']['object']['key'])
 
     # parse the key
     choir_id, song_id, def_id, run_id, _, rows_hash = parse_key(key)
@@ -47,38 +48,47 @@ def main(args):
             'song_id': song_id}
         return ret
 
-    args['row_keys'] = row_keys
-    r = process(args)
+    process_args = {}
+    process_args['key'] = key
+    process_args['row_keys'] = row_keys
+    r = process(process_args)
     # render status data
     # if we arrive here, all parts are rendered, so status = 'composited'
-    r['choir_id'] = choir_id
-    r['song_id'] = song_id
-    r['status'] = 'composited'
-    return r
 
+    lambda_client = boto3.client('lambda')
+
+    ret = {"choir_id": choir_id,
+           "song_id": song_id,
+           "status": "composited"}
+
+    lambda_client.invoke(
+        FunctionName=os.environ['STATUS_LAMBDA'],
+        Payload=json.dumps(ret),
+        InvocationType='Event'
+    )
 
 def process(args):
     # Get the service client.
     s3_client = boto3.client('s3')
 
-    key = args.get('key', args.get('object_name', ''))
+    key = args['key']
 
     # parse the key
     choir_id, song_id, def_id, run_id, row_num, _ = parse_key(key)
 
     src_bucket = os.environ['SRC_BUCKET']
-    dst_bucket = os.environ['DST_BUCKET']
+    dst_bucket = os.environ['DEST_BUCKET']
     # misc_bucket = os.environ['MISC_BUCKET']
 
     # Download the definition file for this job
-    #definition_bucket = os.environ['DEFINITION_BUCKET']
+    #definition_bucket = os.environ['DEF_BUCKET']
     #definition_key = f'{choir_id}+{song_id}+{def_id}.json'
     #definition_object = s3_client.get_object(
     #    Bucket=definition_bucket,
     #    Key=definition_key,
     #)
     #definition = json.load(definition_object['Body'])
-    # output_spec = definition['output']
+    #output_spec = definition['output']
 
     row_keys = args['row_keys']
 
@@ -147,14 +157,14 @@ def process(args):
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)
+
         pipeline = ffmpeg.output(audio,
                                  video,
-                                 output_key,
+                                 path,
                                  format='nut',
                                  pix_fmt='yuv420p',
                                  acodec='pcm_s16le',
                                  vcodec='mpeg2video',
-                                 method='PUT',
                                  r=25,
                                  seekable=0,
                                  qscale=1,

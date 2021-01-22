@@ -64,10 +64,14 @@ def main(event, context):
         print(out.compile())
 
         # run ffmpeg
-        out.run()
+        try:
+            out.run()
+            # upload temp file to S3
+            s3_client.upload_file(path, dst_bucket, keyjpg)
 
-        # upload temp file to S3
-        s3_client.upload_file(path, dst_bucket, keyjpg)
+        except ffmpeg.Error as e:
+            print("ffmpeg error. Trying to continue anyway...")
+            print(e)
 
     # return status dictionary
 
@@ -80,9 +84,9 @@ def main(event, context):
            "status": "new"}
 
     lambda_client.invoke(
-	FunctionName= os.environ['STATUS_LAMBDA'],
-	Payload = json.dumps(ret),
-	InvocationType = 'Event'
+        FunctionName=os.environ['STATUS_LAMBDA'],
+        Payload=json.dumps(ret),
+        InvocationType='Event'
     )
 
     ret = {"key": key,
@@ -92,8 +96,8 @@ def main(event, context):
            "part_id": part_id}
 
     lambda_client.invoke(
-	FunctionName= os.environ['CONVERT_LAMBDA'],
-	Payload = json.dumps(ret),
-	InvocationType = 'Event'
+        FunctionName=os.environ['CONVERT_LAMBDA'],
+        Payload=json.dumps(ret),
+        InvocationType='Event'
     )
     return ret
