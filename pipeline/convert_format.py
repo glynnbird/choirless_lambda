@@ -146,10 +146,11 @@ def main(event, context):
         audio = ffmpeg.input('anullsrc',
                              format='lavfi').audio
 
+    tempfile.tempdir = '/mnt/tmp'
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)
-
+        print(path)
         pipeline = ffmpeg.output(audio,
                                  video,
                                  path,
@@ -169,17 +170,17 @@ def main(event, context):
         # upload temp file to S3
         s3_client.upload_file(path, dst_bucket, output_key)
 
-    lambda_client = boto3.client('lambda')
-    ret = {
-        "choir_id": choir_id,
-        "song_id": song_id,
-        "part_id": part_id,
-        "status": "converted"}
+    #lambda_client = boto3.client('lambda')
+    #ret = {
+    #    "choir_id": choir_id,
+    #    "song_id": song_id,
+    #    "part_id": part_id,
+    #    "status": "converted"}
 
-    lambda_client.invoke(
-        FunctionName=os.environ['STATUS_LAMBDA'],
-        Payload=json.dumps(ret),
-        InvocationType='Event'
-    )
+    #lambda_client.invoke(
+    #    FunctionName=os.environ['STATUS_LAMBDA'],
+    #    Payload=json.dumps(ret),
+    #    InvocationType='Event'
+    #)
 
-    return ret
+    #return ret

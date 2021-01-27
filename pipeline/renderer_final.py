@@ -55,17 +55,17 @@ def main(args, context):
     # render status data
     # if we arrive here, all parts are rendered, so status = 'composited'
 
-    lambda_client = boto3.client('lambda')
+    #lambda_client = boto3.client('lambda')
 
-    ret = {"choir_id": choir_id,
-           "song_id": song_id,
-           "status": "composited"}
+    #ret = {"choir_id": choir_id,
+    #       "song_id": song_id,
+    #       "status": "composited"}
 
-    lambda_client.invoke(
-        FunctionName=os.environ['STATUS_LAMBDA'],
-        Payload=json.dumps(ret),
-        InvocationType='Event'
-    )
+    #lambda_client.invoke(
+    #    FunctionName=os.environ['STATUS_LAMBDA'],
+    #    Payload=json.dumps(ret),
+    #    InvocationType='Event'
+    #)
 
 def process(args):
     # Get the service client.
@@ -154,6 +154,7 @@ def process(args):
     if 'loglevel' in args:
         kwargs['v'] = args['loglevel']
 
+    tempfile.tempdir = '/mnt/tmp'
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)

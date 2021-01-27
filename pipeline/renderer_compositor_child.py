@@ -157,6 +157,7 @@ def main(args, context):
     if 'duration' in args:
         kwargs['t'] = int(args['duration'])
 
+    tempfile.tempdir = '/mnt/tmp'
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)
@@ -182,20 +183,20 @@ def main(args, context):
         s3_client.upload_file(path, dst_bucket, output_key)
 
     #call the status lambda
-    lambda_client = boto3.client('lambda')
+    #lambda_client = boto3.client('lambda')
 
-    ret = {
-           "choir_id": choir_id,
-           "song_id": song_id,
-           "status": "rendered"}
+    #ret = {
+    #       "choir_id": choir_id,
+    #       "song_id": song_id,
+    #       "status": "rendered"}
 
-    lambda_client.invoke(
-	FunctionName=os.environ['STATUS_LAMBDA'],
-	Payload=json.dumps(ret),
-	InvocationType='Event'
-    )
+    #lambda_client.invoke(
+    #	FunctionName=os.environ['STATUS_LAMBDA'],
+    #	Payload=json.dumps(ret),
+    #	InvocationType='Event'
+    #)
 
-    return ret
+    #return ret
 
 
 def specs_for_row(specs, row):
