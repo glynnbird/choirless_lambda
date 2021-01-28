@@ -5,8 +5,8 @@ Lambda that converts an incoming video into a standard choirless format.
 
 """
 
-import json
 from pathlib import Path
+from shutil import copyfile
 import re
 import tempfile
 import os
@@ -14,34 +14,43 @@ import boto3
 
 import ffmpeg
 
+LOCAL_BUCKETS_PATH = '../buckets'
+
 
 def main(event, context):
     '''Converts incoming video into choirless format'''
+    # local_mode is for writing to local files rather than S3
+    print('convert_format.py')
+    local_mode = bool(os.environ['LOCAL_MODE'])
+    print('Local mode %s' % (local_mode))
 
     # extract key and source bucket from incoming event
     key = event['key']
-    choir_id = event['choir_id']
-    song_id = event['song_id']
-    part_id = event['part_id']
+    #choir_id = event['choir_id']
+    #song_id = event['song_id']
+    #part_id = event['part_id']
     bucket = event['bucket']
     print('Running on %s/%s' % (bucket, key))
 
     # get destination bucket from environment variable
     dst_bucket = os.environ['DEST_BUCKET']
-
-    # Get the service client.
-    s3_client = boto3.client('s3')
-
-    # Generate the URL to get key from bucket
-    geturl = s3_client.generate_presigned_url(
-        ClientMethod='get_object',
-        Params={
-            'Bucket': bucket,
-            'Key': key
-        }
-    )
-
     output_key = str(Path(key).with_suffix('.nut'))
+
+    if local_mode:
+        geturl = Path(LOCAL_BUCKETS_PATH, bucket, key)
+        desturl = Path(LOCAL_BUCKETS_PATH, dst_bucket, output_key)
+    else:
+        # Get the service client.
+        s3_client = boto3.client('s3')
+
+        # Generate the URL to get key from bucket
+        geturl = s3_client.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={
+                'Bucket': bucket,
+                'Key': key
+            }
+        )
 
     kwargs = {}
 
@@ -145,8 +154,8 @@ def main(event, context):
     else:
         audio = ffmpeg.input('anullsrc',
                              format='lavfi').audio
-
-    tempfile.tempdir = '/mnt/tmp'
+ 
+    tempfile.tempdir = os.environ.get('TMP_DIR', '/tmp')
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)
@@ -168,19 +177,9 @@ def main(event, context):
         pipeline.run()
 
         # upload temp file to S3
-        s3_client.upload_file(path, dst_bucket, output_key)
+        if local_mode:
+            copyfile(path, desturl)
+        else:
+            s3_client.upload_file(path, dst_bucket, output_key)
 
-    #lambda_client = boto3.client('lambda')
-    #ret = {
-    #    "choir_id": choir_id,
-    #    "song_id": song_id,
-    #    "part_id": part_id,
-    #    "status": "converted"}
-
-    #lambda_client.invoke(
-    #    FunctionName=os.environ['STATUS_LAMBDA'],
-    #    Payload=json.dumps(ret),
-    #    InvocationType='Event'
-    #)
-
-    #return ret
+    return {'ok': True}
