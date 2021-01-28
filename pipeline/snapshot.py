@@ -73,21 +73,19 @@ def main(event, context):
             print("ffmpeg error. Trying to continue anyway...")
             print(e)
 
-    # return status dictionary
-
     lambda_client = boto3.client('lambda')
 
-    ret = {"snapshot_key": keyjpg,
-           "choir_id": choir_id,
-           "song_id": song_id,
-           "part_id": part_id,
-           "status": "new"}
+    #ret = {"snapshot_key": keyjpg,
+    #       "choir_id": choir_id,
+    #       "song_id": song_id,
+    #       "part_id": part_id,
+    #       "status": "new"}
 
-    lambda_client.invoke(
-        FunctionName=os.environ['STATUS_LAMBDA'],
-        Payload=json.dumps(ret),
-        InvocationType='Event'
-    )
+    #lambda_client.invoke(
+    #    FunctionName=os.environ['STATUS_LAMBDA'],
+    #    Payload=json.dumps(ret),
+    #    InvocationType='Event'
+    #)
 
     ret = {"key": key,
            "bucket": bucket,
