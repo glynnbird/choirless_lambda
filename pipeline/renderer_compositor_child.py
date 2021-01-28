@@ -19,7 +19,7 @@ def main(args, context):
 
     # local_mode is for writing to local files rather than S3
     print('renderer_child.py')
-    local_mode = bool(os.environ['LOCAL_MODE'])
+    local_mode = bool(os.environ.get('LOCAL_MODE', False))
     print('Local mode %s' % (local_mode))
 
     # Get the service client.

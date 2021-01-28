@@ -10,5 +10,3 @@ rm renderer.zip
 zip -r renderer.zip renderer.js
 rm renderer_compositor_main.zip
 zip -r renderer_compositor_main.zip renderer_compositor_main.js
-rm rawConvert.zip
-zip -r rawConvert.zip rawConvert.js

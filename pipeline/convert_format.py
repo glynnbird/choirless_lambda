@@ -21,7 +21,7 @@ def main(event, context):
     '''Converts incoming video into choirless format'''
     # local_mode is for writing to local files rather than S3
     print('convert_format.py')
-    local_mode = bool(os.environ['LOCAL_MODE'])
+    local_mode = bool(os.environ.get('LOCAL_MODE', False))
     print('Local mode %s' % (local_mode))
 
     # extract key and source bucket from incoming event

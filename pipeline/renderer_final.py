@@ -20,7 +20,7 @@ def main(args, context):
 
     # local_mode is for writing to local files rather than S3
     print('renderer_final.py')
-    local_mode = bool(os.environ['LOCAL_MODE'])
+    local_mode = bool(os.environ.get('LOCAL_MODE', False))
     print('Local mode %s' % (local_mode))
 
     # Get the service client.
@@ -85,7 +85,7 @@ def process(args):
 
     src_bucket = os.environ['SRC_BUCKET']
     dst_bucket = os.environ['DEST_BUCKET']
-    local_mode = bool(os.environ['LOCAL_MODE'])
+    local_mode = bool(os.environ.get('LOCAL_MODE', False))
     # misc_bucket = os.environ['MISC_BUCKET']
 
     # Download the definition file for this job

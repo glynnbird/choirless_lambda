@@ -1,6 +1,8 @@
 import json
 import os
 from pathlib import Path
+from shutil import copyfile
+from urllib.parse import unquote
 import tempfile
 import time
 import re
@@ -10,11 +12,26 @@ import boto3
 import ffmpeg
 
 
-def main(args):
-    # Get the service client.
+# first step to ensure we have all parts
+# then call process()
+
+LOCAL_BUCKETS_PATH = '../buckets'
+
+
+def main(args, context):
+
+    # local_mode is for writing to local files rather than S3
+    print('post_production.py')
+    local_mode = bool(os.environ.get('LOCAL_MODE', False))
+    print('Local mode %s' % (local_mode))
+
     s3_client = boto3.client('s3')
 
-    key = args.get('key', args.get('object_name', ''))
+    if local_mode:
+        key = args['key']
+    else:
+        # when called from AWS S3 Event, the key/bucket are buried in the event
+        key = unquote(args['Records'][0]['s3']['object']['key'])
 
     # parse the key
     choir_id, song_id, def_id = Path(key).stem.split('-')[0].split('+')
@@ -38,6 +55,7 @@ def main(args):
     ###
 
     # Create a temp dir for our files to use
+    tempfile.tempdir = os.environ.get('TMP_DIR', '/tmp')
     with tempfile.TemporaryDirectory() as tmpdir:
 
         print("Doing first pass")
