@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from shutil import copyfile
 import tempfile
 
 import boto3
@@ -8,7 +9,7 @@ import boto3
 import ffmpeg
 
 #import numpy as np
-
+LOCAL_BUCKETS_PATH = '../buckets'
 
 def helper(x):
     return {'tag': f"{x['compositor']}-{x['row_num']}"}
@@ -16,10 +17,13 @@ def helper(x):
 
 def main(args, context):
 
+    # local_mode is for writing to local files rather than S3
+    print('renderer_child.py')
+    local_mode = bool(os.environ['LOCAL_MODE'])
+    print('Local mode %s' % (local_mode))
+
     # Get the service client.
     s3_client = boto3.client('s3')
-
-    #args['endpoint'] = args.get('endpoint', args.get('ENDPOINT'))
     definition_key = args.get('definition_key', '')
 
     # infer choir, song, and definition id from filename
@@ -43,11 +47,16 @@ def main(args, context):
         f"We are the child {compositor} process, run id: {run_id} row: {row_num}")
 
     # Download the definition file for this job
-    definition_object = s3_client.get_object(
-        Bucket=definition_bucket,
-        Key=definition_key,
-    )
-    definition = json.load(definition_object['Body'])
+    if local_mode:
+        file = open(Path(LOCAL_BUCKETS_PATH, definition_bucket, definition_key), 'r')
+        definition = json.loads(file.read())
+    else:
+        # read definition from S3
+        definition_object = s3_client.get_object(
+            Bucket=definition_bucket,
+            Key=definition_key,
+        )
+        definition = json.load(definition_object['Body'])
 
     output_spec = definition['output']
     input_specs = definition['inputs']
@@ -94,13 +103,16 @@ def main(args, context):
         # Get the part spec and input
         part_id = spec['part_id']
         part_key = f"{choir_id}+{song_id}+{part_id}.nut"
-        part_url = s3_client.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={
-                'Bucket': src_bucket,
-                'Key': part_key
-            }
-        )
+        if local_mode:
+            part_url = Path(LOCAL_BUCKETS_PATH, src_bucket, part_key)
+        else:
+            part_url = s3_client.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={
+                    'Bucket': src_bucket,
+                    'Key': part_key
+                }
+            )
 
         # process the spec
         video, audio = process_spec(part_url, spec)
@@ -157,7 +169,7 @@ def main(args, context):
     if 'duration' in args:
         kwargs['t'] = int(args['duration'])
 
-    tempfile.tempdir = '/mnt/tmp'
+    tempfile.tempdir = os.environ.get('TMP_DIR', '/tmp')
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)
@@ -180,23 +192,12 @@ def main(args, context):
         pipeline.run()
 
         # write the output file to S3
-        s3_client.upload_file(path, dst_bucket, output_key)
+        if local_mode:
+            copyfile(path, Path(LOCAL_BUCKETS_PATH, dst_bucket, output_key))
+        else:
+            s3_client.upload_file(path, dst_bucket, output_key)
 
-    #call the status lambda
-    #lambda_client = boto3.client('lambda')
-
-    #ret = {
-    #       "choir_id": choir_id,
-    #       "song_id": song_id,
-    #       "status": "rendered"}
-
-    #lambda_client.invoke(
-    #	FunctionName=os.environ['STATUS_LAMBDA'],
-    #	Payload=json.dumps(ret),
-    #	InvocationType='Event'
-    #)
-
-    #return ret
+    return { 'ok': True }
 
 
 def specs_for_row(specs, row):

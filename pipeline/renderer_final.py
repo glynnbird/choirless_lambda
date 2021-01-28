@@ -1,10 +1,11 @@
 import os
+import glob
 from pathlib import Path
+from shutil import copyfile
 import tempfile
 import time
 import hashlib
 from urllib.parse import unquote
-import json
 import boto3
 
 import ffmpeg
@@ -12,13 +13,25 @@ import ffmpeg
 # first step to ensure we have all parts
 # then call process()
 
+LOCAL_BUCKETS_PATH = '../buckets'
+
 
 def main(args, context):
+
+    # local_mode is for writing to local files rather than S3
+    print('renderer_final.py')
+    local_mode = bool(os.environ['LOCAL_MODE'])
+    print('Local mode %s' % (local_mode))
 
     # Get the service client.
     s3_client = boto3.client('s3')
 
-    key = unquote(args['Records'][0]['s3']['object']['key'])
+    # extract key and source bucket from incoming event
+    if local_mode:
+        key = args['key']
+    else:
+        # extract key from the Lambda event
+        key = unquote(args['Records'][0]['s3']['object']['key'])
 
     # parse the key
     choir_id, song_id, def_id, run_id, _, rows_hash = parse_key(key)
@@ -27,15 +40,21 @@ def main(args, context):
 
     # Check all parts present if, not abort
     key_prefix = f'{choir_id}+{song_id}+{def_id}+{run_id}'
-    contents = s3_client.list_objects(
-        Bucket=src_bucket,
-        Prefix=key_prefix
-    )
-    row_keys = [x['Key'] for x in contents.get('Contents', [])
-                if x['Size'] > 0]
-
-    # Sort to make sure we are in correct order
-    row_keys.sort(key=lambda x: int(parse_key(x)[4]))
+    if local_mode:
+        local_path = Path(
+                LOCAL_BUCKETS_PATH,
+                src_bucket,
+                key_prefix + '*')
+        row_keys = glob.glob(str(local_path), recursive=False)
+    else:
+        contents = s3_client.list_objects(
+            Bucket=src_bucket,
+            Prefix=key_prefix
+        )
+        row_keys = [x['Key'] for x in contents.get('Contents', [])
+                    if x['Size'] > 0]
+        # Sort to make sure we are in correct order
+        row_keys.sort(key=lambda x: int(parse_key(x)[4]))
 
     # Calc hash of found parts to make sure we have all, if not abort
     if calc_hash_of_keys(row_keys) != rows_hash:
@@ -51,21 +70,9 @@ def main(args, context):
     process_args = {}
     process_args['key'] = key
     process_args['row_keys'] = row_keys
-    r = process(process_args)
-    # render status data
-    # if we arrive here, all parts are rendered, so status = 'composited'
+    process(process_args)
+    return { 'ok': True }
 
-    #lambda_client = boto3.client('lambda')
-
-    #ret = {"choir_id": choir_id,
-    #       "song_id": song_id,
-    #       "status": "composited"}
-
-    #lambda_client.invoke(
-    #    FunctionName=os.environ['STATUS_LAMBDA'],
-    #    Payload=json.dumps(ret),
-    #    InvocationType='Event'
-    #)
 
 def process(args):
     # Get the service client.
@@ -78,15 +85,16 @@ def process(args):
 
     src_bucket = os.environ['SRC_BUCKET']
     dst_bucket = os.environ['DEST_BUCKET']
+    local_mode = bool(os.environ['LOCAL_MODE'])
     # misc_bucket = os.environ['MISC_BUCKET']
 
     # Download the definition file for this job
     #definition_bucket = os.environ['DEF_BUCKET']
     #definition_key = f'{choir_id}+{song_id}+{def_id}.json'
-    #definition_object = s3_client.get_object(
+    # definition_object = s3_client.get_object(
     #    Bucket=definition_bucket,
     #    Key=definition_key,
-    #)
+    # )
     #definition = json.load(definition_object['Body'])
     #output_spec = definition['output']
 
@@ -103,13 +111,16 @@ def process(args):
         audio_parts = []
         for row_key in row_keys:
             _, _, _, _, row_num, _ = parse_key(row_key)
-            row_url = s3_client.generate_presigned_url(
-                ClientMethod='get_object',
-                Params={
-                    'Bucket': src_bucket,
-                    'Key': row_key
-                }
-            )
+            if local_mode:
+                row_url = row_key
+            else:
+                row_url = s3_client.generate_presigned_url(
+                    ClientMethod='get_object',
+                    Params={
+                        'Bucket': src_bucket,
+                        'Key': row_key
+                    }
+                )
             row_part = ffmpeg.input(row_url,
                                     seekable=0,
                                     thread_queue_size=64)
@@ -127,13 +138,16 @@ def process(args):
         # Just a single video part
         row_key = row_keys[0]
         _, _, _, _, row_num, _ = parse_key(row_key)
-        row_url = s3_client.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={
-                'Bucket': src_bucket,
-                'Key': row_key
-            }
-        )
+        if local_mode:
+            row_url = Path(LOCAL_BUCKETS_PATH, src_bucket, row_key)
+        else:
+            row_url = s3_client.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={
+                    'Bucket': src_bucket,
+                    'Key': row_key
+                }
+            )
         row_part = ffmpeg.input(row_url,
                                 seekable=0,
                                 thread_queue_size=64)
@@ -154,7 +168,7 @@ def process(args):
     if 'loglevel' in args:
         kwargs['v'] = args['loglevel']
 
-    tempfile.tempdir = '/mnt/tmp'
+    tempfile.tempdir = os.environ.get('TMP_DIR', '/tmp')
     with tempfile.TemporaryDirectory() as tmp:
         # join temp directory with our filename
         path = os.path.join(tmp, output_key)
@@ -180,7 +194,10 @@ def process(args):
         t2 = time.time()
 
         # upload temp file to S3
-        s3_client.upload_file(path, dst_bucket, output_key)
+        if local_mode:
+            copyfile(path, Path(LOCAL_BUCKETS_PATH, dst_bucket, output_key))
+        else:
+            s3_client.upload_file(path, dst_bucket, output_key)
 
     ret = {'dst_key': output_key,
            'run_id': run_id,
