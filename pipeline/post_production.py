@@ -43,11 +43,20 @@ def main(args, context):
 
     # Download the definition file for this job
     definition_key = f'{choir_id}+{song_id}+{def_id}.json'
-    definition_object = s3_client.get_object(
-        Bucket=definition_bucket,
-        Key=definition_key,
-    )
-    definition = json.load(definition_object['Body'])
+    if local_mode:
+        file = open(
+            Path(
+                LOCAL_BUCKETS_PATH,
+                definition_bucket,
+                definition_key),
+            'r')
+        definition = json.loads(file.read())
+    else:
+        definition_object = s3_client.get_object(
+            Bucket=definition_bucket,
+            Key=definition_key,
+        )
+        definition = json.load(definition_object['Body'])
     output_spec = definition['output']
 
     ###
@@ -59,13 +68,16 @@ def main(args, context):
     with tempfile.TemporaryDirectory() as tmpdir:
 
         print("Doing first pass")
-        src_url = s3_client.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={
-                'Bucket': src_bucket,
-                'Key': key
-            }
-        )
+        if local_mode:
+            src_url = Path(LOCAL_BUCKETS_PATH, src_bucket, key)
+        else:
+            src_url = s3_client.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={
+                    'Bucket': src_bucket,
+                    'Key': key
+                }
+            )
         stream = ffmpeg.input(src_url,
                               seekable=0)
         audio = stream.audio
@@ -135,13 +147,17 @@ def main(args, context):
         # Overlay the watermark if present
         watermark_file = output_spec.get('watermark')
         if watermark_file:
-            watermark_url = s3_client.generate_presigned_url(
-                ClientMethod='get_object',
-                Params={
-                    'Bucket': misc_bucket,
-                    'Key': watermark_file
-                }
-            )
+            if local_mode:
+                watermark_url = Path(
+                    LOCAL_BUCKETS_PATH, misc_bucket, watermark_file)
+            else:
+                watermark_url = s3_client.generate_presigned_url(
+                    ClientMethod='get_object',
+                    Params={
+                        'Bucket': misc_bucket,
+                        'Key': watermark_file
+                    }
+                )
             watermark = ffmpeg.input(watermark_url,
                                      seekable=0)
             video = video.overlay(watermark,
@@ -158,13 +174,19 @@ def main(args, context):
         # Add reverb in if present
         reverb_type = output_spec.get('reverb_type')
         if reverb_type:
-            reverb_url = s3_client.generate_presigned_url(
-                ClientMethod='get_object',
-                Params={
-                    'Bucket': misc_bucket,
-                    'Key': f'{reverb_type}.wav'
-                }
-            )
+            if local_mode:
+                reverb_url = Path(
+                    LOCAL_BUCKETS_PATH,
+                    misc_bucket,
+                    f'{reverb_type}.wav')
+            else:
+                reverb_url = s3_client.generate_presigned_url(
+                    ClientMethod='get_object',
+                    Params={
+                        'Bucket': misc_bucket,
+                        'Key': f'{reverb_type}.wav'
+                    }
+                )
             reverb_pct = float(output_spec.get('reverb', 0.1))
             if reverb_pct > 0:
                 reverb_part = ffmpeg.input(reverb_url,
@@ -205,7 +227,15 @@ def main(args, context):
         t2 = time.time()
 
         # write the output file to S3
-        s3_client.upload_file(output_path, dst_bucket, output_key)
+        if local_mode:
+            copyfile(
+                output_path,
+                Path(
+                    LOCAL_BUCKETS_PATH,
+                    dst_bucket,
+                    output_key))
+        else:
+            s3_client.upload_file(output_path, dst_bucket, output_key)
 
         ret = {'dst_key': output_key,
                'def_id': def_id,
