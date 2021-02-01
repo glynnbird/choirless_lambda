@@ -9,7 +9,6 @@ from urllib.parse import unquote
 from shutil import copyfile
 
 import os
-import json
 import tempfile
 
 import boto3
@@ -51,7 +50,6 @@ def main(event, context):
                 'Key': key
             }
         )
-    choir_id, song_id, part_id = Path(key).stem.split('.')[0].split('+')
     print('Running on %s/%s' % (bucket, key))
 
     # Generate a temporary filename for the destination file
@@ -87,19 +85,3 @@ def main(event, context):
         except ffmpeg.Error as e:
             print("ffmpeg error. Trying to continue anyway...")
             print(e)
-
-    # when running on Lambda, invoke the next Lambda
-    if not local_mode:
-        lambda_client = boto3.client('lambda')
-
-        ret = {"key": key,
-               "bucket": bucket,
-               "choir_id": choir_id,
-               "song_id": song_id,
-               "part_id": part_id}
-
-        lambda_client.invoke(
-            FunctionName=os.environ['CONVERT_LAMBDA'],
-            Payload=json.dumps(ret),
-            InvocationType='Event'
-        )
