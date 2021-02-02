@@ -13,5 +13,8 @@
     "ffmpegrunner": "git+https://github.com/glynnbird/ffmpegrunner.git",
     "fluent-ffmpeg": "^2.1.2",
     "tmp": "^0.2.1"
+  },
+  "devDependencies": {
+    "standard": "^16.0.3"
   }
 }
