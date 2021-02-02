@@ -1,7 +1,7 @@
 // environment variables
-const LOCAL_MODE = !!process.env['LOCAL_MODE']
-const DEST_BUCKET = process.env['DEST_BUCKET']
-const CONVERT_LAMBDA = process.env['CONVERT_LAMBDA']
+const LOCAL_MODE = !!process.env.LOCAL_MODE
+const DEST_BUCKET = process.env.DEST_BUCKET
+const CONVERT_LAMBDA = process.env.CONVERT_LAMBDA
 const LOCAL_BUCKETS_PATH = '../buckets'
 
 // node modules
@@ -29,23 +29,17 @@ const main = async (event, context) => {
     desturl = path.join(LOCAL_BUCKETS_PATH, DEST_BUCKET, key + '.jpg')
   } else {
     // event is an AWS event
-    key = unescape(event['Records'][0]['s3']['object']['key'])
-    bucket = event['Records'][0]['s3']['bucket']['name']
+    key = unescape(event.Records[0].s3.object.key)
+    bucket = event.Records[0].s3.bucket.name
 
     // Generate the URL to get key from bucket
     geturl = await S3.getSignedUrlPromise('getObject', { Bucket: bucket, Key: key })
   }
-
-  // extract choir/song/part from the filename
-  const bits = path.parse(key).name.split('+')
-  choir_id = bits[0]
-  song_id = bits[1]
-  part_id = bits[2]
   console.log(`Running on ${bucket}/${key}`)
 
   // create temporary directory - self cleaning
   tmp.dir({ unsafeCleanup: true }, async (err, tmppath, done) => {
-    if (err) throw err;
+    if (err) throw err
 
     // run ffmpeg to take a snapshot
     const keyjpg = key + '.jpg'
@@ -62,20 +56,25 @@ const main = async (event, context) => {
       fs.copyFileSync(outpath, desturl)
     } else {
       // upload to S3
-      await S3.putObject({ 
-         Bucket: DEST_BUCKET,
-         Key: keyjpg,
-         Body: fs.createReadStrean(outpath)
+      await S3.putObject({
+        Bucket: DEST_BUCKET,
+        Key: keyjpg,
+        Body: fs.createReadStrean(outpath)
       }).promise()
 
       // invoke next Lambda
-      const ret = { key, bucket, choir_id, song_id, part_id }
-      await lambda.invokeAsync(CONVERT_LAMBDA, JSON.stringify(ret)).promise()
+      const bits = path.parse(key).name.split('+')
+      const ret = {
+        key: key,
+        bucket: bucket,
+        choir_id: bits[0],
+        song_id: bits[1],
+        part_id: bits[2]
+      }
+      await Lambda.invokeAsync(CONVERT_LAMBDA, JSON.stringify(ret)).promise()
     }
     done()
-  });
+  })
 }
 
-main({ 
-  key: '001kfjgQ42CNxs0XIKnw3B71Yy2qus14+001kj2M82SK1WZ1w3CBT3uzSqS3BhXTH+001kjQbh2nOCht0dupTm3b2yPH04rExS.webm',
-  bucket: 'raw' })
+exports.main = main
