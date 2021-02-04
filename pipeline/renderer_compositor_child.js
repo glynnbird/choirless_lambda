@@ -248,6 +248,7 @@ const main = async (event, context) => {
     const video = videos[i]
     const partId = video.part_id
     const partKey = `${choirId}+${songId}+${partId}.nut`
+    console.log(partKey, video.offset)
     let partURL
     if (LOCAL_MODE) {
       partURL = path.join(LOCAL_BUCKETS_PATH, SRC_BUCKET, partKey)
