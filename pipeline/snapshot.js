@@ -63,13 +63,9 @@ const main = async (event, context) => {
       }).promise()
 
       // invoke next Lambda
-      const bits = path.parse(key).name.split('+')
       const ret = {
         key: key,
-        bucket: bucket,
-        choir_id: bits[0],
-        song_id: bits[1],
-        part_id: bits[2]
+        bucket: bucket
       }
       await Lambda.invokeAsync(CONVERT_LAMBDA, JSON.stringify(ret)).promise()
     }

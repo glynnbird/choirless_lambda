@@ -128,6 +128,7 @@ const main = async (event, context) => {
     definition = fs.readFileSync(p, { encoding: 'utf8' })
   } else {
     definition = await S3.getObject({ Bucket: DEFINITION_BUCKET, Key: definitionKey }).promise()
+    definition = definition.Body
   }
   definition = JSON.parse(definition)
 

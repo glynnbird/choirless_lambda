@@ -1,12 +1,24 @@
-const AWS = require('aws-sdk')
+// environment variables
+const LOCAL_MODE = !!process.env.LOCAL_MODE
+const COMPOSITOR_CHILD_LAMBDA = process.env.COMPOSITOR_CHILD_LAMBDA
+const LOCAL_BUCKETS_PATH = '../buckets'
+
+// node modules
+const path = require('path')
+const fs = require('fs')
 const crypto = require('crypto')
+const AWS = require('aws-sdk')
 const { v4: uuidv4 } = require('uuid')
 
-const handler = async (event, context) => {
-  // s3 client
-  const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
-  // lambda client
-  const lambda = new AWS.Lambda()
+
+// aws objects
+const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
+const lambda = new AWS.Lambda()
+
+// main
+const main = async (event, context) => {
+  console.log('renderer_compositor_child')
+  let definition
 
   // look for a key in opts and pull songId and choirId from there
   const key = unescape(event.Records[0].s3.object.key)
@@ -14,13 +26,21 @@ const handler = async (event, context) => {
   console.log(`Bucket/key ${bucket}/${key}`)
 
   // Get the definition from the bucket
-  const definition_object = await s3.getObject({ Bucket: bucket, Key: key }).promise()
-  const definition = JSON.parse(definition_object.Body)
+  if (LOCAL_MODE) {
+    const p = path.join(LOCAL_BUCKETS_PATH, bucket, key)
+    definition = fs.readFileSync(p, { encoding: 'utf8' })
+  } else {
+    definition = await S3.getObject({ Bucket: bucket, Key: key }).promise()
+    definition.Body
+  }
+  definition = JSON.parse(definition)
 
+  // generate a new run id
   const run_id = uuidv4().slice(0, 8)
 
   // Get the inputs for this scene
   const input_specs = definition.inputs
+
   // Calculate number of rows
   let rows = new Set()
   input_specs.forEach(spec => {
@@ -49,13 +69,15 @@ const handler = async (event, context) => {
     console.log(`Payload is ${JSON.stringify(payload)}`)
 
     // call the compositor lambda
-    const params = {
-      FunctionName: process.env.COMPOSITOR_CHILD_LAMBDA, // the lambda function we are going to invoke
-      InvocationType: 'Event',
-      Payload: JSON.stringify(payload)
+    if (!LOCAL_MODE) {
+      const params = {
+        FunctionName: COMPOSITOR_CHILD_LAMBDA, // the lambda function we are going to invoke
+        InvocationType: 'Event',
+        Payload: JSON.stringify(payload)
+      }
+      const ret = await lambda.invoke(params).promise()
+      console.log(`Ret is ${JSON.stringify(ret)}`)
     }
-    const ret = await lambda.invoke(params).promise()
-    console.log(`Ret is ${JSON.stringify(ret)}`)
   }
 
   return {
@@ -65,6 +87,4 @@ const handler = async (event, context) => {
   }
 }
 
-module.exports = {
-  handler
-}
+exports.main = main

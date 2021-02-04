@@ -94,3 +94,5 @@ const main = async (event, context) => {
     done()
   })
 }
+
+exports.main = main
