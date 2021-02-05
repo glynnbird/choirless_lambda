@@ -1,21 +1,20 @@
 // environment variables
 const LOCAL_MODE = !!process.env.LOCAL_MODE
 const DEST_BUCKET = process.env.DEST_BUCKET
-const CONVERT_LAMBDA = process.env.CONVERT_LAMBDA
 const LOCAL_BUCKETS_PATH = '../buckets'
 
 // node modules
 const fs = require('fs')
 const path = require('path')
 const aws = require('aws-sdk')
-const tmp = require('tmp')
+const tmpdir = require('tmpdir')
 const ffmpeg = require('fluent-ffmpeg')
 const run = require('ffmpegrunner').run
 
 // aws objects
 const S3 = new aws.S3()
-const Lambda = new aws.Lambda()
 
+// main
 const main = async (event, context) => {
   let key, bucket, geturl, desturl
   console.log('snapshot_final')
@@ -37,33 +36,31 @@ const main = async (event, context) => {
   }
   console.log(`Running on ${bucket}/${key}`)
 
-  // create temporary directory - self cleaning
-  tmp.dir({ unsafeCleanup: true }, async (err, tmppath, done) => {
-    if (err) throw err
+  // create temporary directory
+  const tmppath = tmpdir.createTmpDirectory()
 
-    // run ffmpeg to take a snapshot
-    const keyjpg = key + '.jpg'
-    const outpath = path.join(tmppath, keyjpg)
-    const command = ffmpeg()
-      .input(geturl)
-      .inputOptions('-seekable 0')
-      .output(outpath)
-      .outputOptions(['-format singlejpeg', '-vframes 1'])
-    await run(command, true)
+  // run ffmpeg to take a snapshot
+  const keyjpg = key + '.jpg'
+  const outpath = path.join(tmppath, keyjpg)
+  const command = ffmpeg()
+    .input(geturl)
+    .inputOptions('-seekable 0')
+    .output(outpath)
+    .outputOptions(['-format singlejpeg', '-vframes 1'])
+  await run(command, true)
 
-    // copy the temporary file to output bucket
-    if (LOCAL_MODE) {
-      fs.copyFileSync(outpath, desturl)
-    } else {
-      // upload to S3
-      await S3.putObject({
-        Bucket: DEST_BUCKET,
-        Key: keyjpg,
-        Body: fs.createReadStrean(outpath)
-      }).promise()
-    }
-    done()
-  })
+  // copy the temporary file to output bucket
+  if (LOCAL_MODE) {
+    fs.copyFileSync(outpath, desturl)
+  } else {
+    // upload to S3
+    await S3.putObject({
+      Bucket: DEST_BUCKET,
+      Key: keyjpg,
+      Body: fs.createReadStream(outpath)
+    }).promise()
+  }
+  tmpdir.removeTmpDirectory(tmppath)
 }
 
 exports.main = main

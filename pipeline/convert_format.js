@@ -1,14 +1,13 @@
 // environment variables
 const LOCAL_MODE = !!process.env.LOCAL_MODE
 const DEST_BUCKET = process.env.DEST_BUCKET
-const TMP_DIR = process.env.TMP_DIR || '/tmp'
 const LOCAL_BUCKETS_PATH = '../buckets'
 
 // node modules
 const fs = require('fs')
 const path = require('path')
 const aws = require('aws-sdk')
-const tmp = require('tmp')
+const tmpdir = require('tmpdir')
 const ffmpeg = require('fluent-ffmpeg')
 const ffmpegrunner = require('ffmpegrunner')
 const run = ffmpegrunner.run
@@ -62,37 +61,34 @@ const main = async (event, context) => {
       .inputFormat('lavfi')
   }
 
-  // create temporary directory - self cleaning
-  tmp.dir({ unsafeCleanup: true, tmpdir: TMP_DIR }, async (err, tmppath, done) => {
-    if (err) throw err
+  // create temporary directory
+  const tmppath = tmpdir.createTmpDirectory()
+  const outpath = path.join(tmppath, outputKey)
 
-    const outpath = path.join(tmppath, outputKey)
+  // set output parameters
+  command
+    .output(outpath)
+    .outputFormat('nut') // nut container
+    .outputOptions([
+      '-acodec pcm_f32le', // PCM audio
+      '-vcodec libx264', // H.264 video
+      '-preset fast', // fast
+      '-r 25', // 25 fps
+      '-ac 1']) // mono
+  await run(command, true)
 
-    // set output parameters
-    command
-      .output(outpath)
-      .outputFormat('nut') // nut container
-      .outputOptions([
-        '-acodec pcm_f32le', // PCM audio
-        '-vcodec libx264', // H.264 video
-        '-preset fast', // fast
-        '-r 25', // 25 fps
-        '-ac 1']) // mono
-    await run(command, true)
-
-    // copy the temporary file to output bucket
-    if (LOCAL_MODE) {
-      fs.copyFileSync(outpath, desturl)
-    } else {
-      // upload to S3
-      await S3.putObject({
-        Bucket: DEST_BUCKET,
-        Key: outputKey,
-        Body: fs.createReadStrean(outpath)
-      }).promise()
-    }
-    done()
-  })
+  // copy the temporary file to output bucket
+  if (LOCAL_MODE) {
+    fs.copyFileSync(outpath, desturl)
+  } else {
+    // upload to S3
+    await S3.putObject({
+      Bucket: DEST_BUCKET,
+      Key: outputKey,
+      Body: fs.createReadStream(outpath)
+    }).promise()
+  }
+  tmpdir.removeTmpDirectory(tmppath)
 }
 
 exports.main = main

@@ -1,7 +1,6 @@
 // environment variables
 const LOCAL_MODE = !!process.env.LOCAL_MODE
 const DEST_BUCKET = process.env.DEST_BUCKET
-const TMP_DIR = process.env.TMP_DIR || '/tmp'
 const LOCAL_BUCKETS_PATH = '../buckets'
 
 // node modules
@@ -9,7 +8,7 @@ const fs = require('fs')
 const crypto = require('crypto')
 const path = require('path')
 const aws = require('aws-sdk')
-const tmp = require('tmp')
+const tmpdir = require('tmpdir')
 const ffmpeg = require('fluent-ffmpeg')
 const ffmpegrunner = require('ffmpegrunner')
 const run = ffmpegrunner.run
@@ -86,6 +85,7 @@ const buildComplexFilter = (videos) => {
   }
 }
 
+// main
 const main = async (event, context) => {
   console.log('renderer_final')
 
@@ -147,40 +147,39 @@ const main = async (event, context) => {
   const complexFilter = buildComplexFilter(videos)
   command.complexFilter(complexFilter.filters, complexFilter.outputs)
 
-  // create temporary directory - self cleaning
-  tmp.dir({ unsafeCleanup: true, tmpdir: TMP_DIR }, async (err, tmppath, done) => {
-    if (err) throw err
-    const outputKey = `${pk.choirId}+${pk.songId}+${pk.defId}-preprod.nut`
-    const outpath = path.join(tmppath, outputKey)
+  // create temporary directory
+  const tmppath = tmpdir.createTmpDirectory()
+  const outputKey = `${pk.choirId}+${pk.songId}+${pk.defId}-preprod.nut`
+  const outpath = path.join(tmppath, outputKey)
 
-    // set output parameters
-    command
-      .output(outpath)
-      .outputFormat('nut') // nut container
-      .outputOptions([
-        '-pix_fmt yuv420p',
-        '-acodec pcm_s16le', // PCM audio
-        '-vcodec mpeg2video', // mpeg2video video
-        //        '-preset fast', // fast
-        '-r 25', // 25 fps
-        //        '-qscale 1', // ?
-        '-qmin 1'])
-    await run(command, true)
+  // set output parameters
+  command
+    .output(outpath)
+    .outputFormat('nut') // nut container
+    .outputOptions([
+      '-pix_fmt yuv420p',
+      '-acodec pcm_s16le', // PCM audio
+      '-vcodec mpeg2video', // mpeg2video video
+      //        '-preset fast', // fast
+      '-r 25', // 25 fps
+      //        '-qscale 1', // ?
+      '-qmin 1'])
+  await run(command, true)
 
-    // copy the temporary file to output bucket
-    if (LOCAL_MODE) {
-      const desturl = path.join(LOCAL_BUCKETS_PATH, DEST_BUCKET, outputKey)
-      fs.copyFileSync(outpath, desturl)
-    } else {
-      // upload to S3
-      await S3.putObject({
-        Bucket: DEST_BUCKET,
-        Key: outputKey,
-        Body: fs.createReadStrean(outpath)
-      }).promise()
-    }
-    done()
-  })
+  // copy the temporary file to output bucket
+  if (LOCAL_MODE) {
+    const desturl = path.join(LOCAL_BUCKETS_PATH, DEST_BUCKET, outputKey)
+    fs.copyFileSync(outpath, desturl)
+  } else {
+    // upload to S3
+    await S3.putObject({
+      Bucket: DEST_BUCKET,
+      Key: outputKey,
+      Body: fs.createReadStream(outpath)
+    }).promise()
+  }
+
+  tmpdir.removeTmpDirectory(tmppath)
 
   return { ok: true }
 }

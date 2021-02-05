@@ -4,7 +4,8 @@
   "description": "## The rendering pipeline",
   "main": "renderer.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "standard": "standard --fix"
   },
   "author": "",
   "license": "ISC",
@@ -13,7 +14,7 @@
     "ffmpegrunner": "git+https://github.com/glynnbird/ffmpegrunner.git",
     "fluent-ffmpeg": "^2.1.2",
     "glob": "^7.1.6",
-    "tmp": "^0.2.1",
+    "tmpdir": "git+https://github.com/glynnbird/tmpdir.git",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

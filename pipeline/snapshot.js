@@ -8,7 +8,7 @@ const LOCAL_BUCKETS_PATH = '../buckets'
 const fs = require('fs')
 const path = require('path')
 const aws = require('aws-sdk')
-const tmp = require('tmp')
+const tmpdir = require('tmpdir')
 const ffmpeg = require('fluent-ffmpeg')
 const run = require('ffmpegrunner').run
 
@@ -16,7 +16,7 @@ const run = require('ffmpegrunner').run
 const S3 = new aws.S3()
 const Lambda = new aws.Lambda()
 
-
+// main
 const main = async (event, context) => {
   let key, bucket, geturl, desturl
   console.log('snapshot')
@@ -38,47 +38,43 @@ const main = async (event, context) => {
   }
   console.log(`Running on ${bucket}/${key}`)
 
-  // create temporary directory - self cleaning
-  const tmppath = createTmpDirectory();
-  
-    // run ffmpeg to take a snapshot
-    const keyjpg = key + '.jpg'
-    const outpath = path.join(tmppath, keyjpg)
-    const command = ffmpeg()
-      .input(geturl)
-      .inputOptions('-seekable 0')
-      .output(outpath)
-      .outputOptions(['-format singlejpeg', '-vframes 1'])
-    console.log("about to run ffmpeg..")
-    await run(command, true)
-    console.log("ffmpeg has run ")
+  // create temporary directory
+  const tmppath = tmpdir.createTmpDirectory()
 
-    // copy the temporary file to output bucket
-    if (LOCAL_MODE) {
-      fs.copyFileSync(outpath, desturl)
-    } else {
-      // upload to S3
-      console.log("uploading to S3..")
-      await S3.putObject({
-        Bucket: DEST_BUCKET,
-        Key: keyjpg,
-        Body: fs.createReadStream(outpath)
-      }).promise()
+  // run ffmpeg to take a snapshot
+  const keyjpg = key + '.jpg'
+  const outpath = path.join(tmppath, keyjpg)
+  const command = ffmpeg()
+    .input(geturl)
+    .inputOptions('-seekable 0')
+    .output(outpath)
+    .outputOptions(['-format singlejpeg', '-vframes 1'])
+  await run(command, true)
 
-      // invoke next Lambda
-      const payload = {
-        key: key,
-        bucket: bucket
-      }
-      const params = {
-        FunctionName: CONVERT_LAMBDA,
-        InvocationType: 'Event',
-        Payload: JSON.stringify(payload)
-      }
-      console.log("Now invoking Lambda...")
-      await Lambda.invoke(params).promise()
+  // copy the temporary file to output bucket
+  if (LOCAL_MODE) {
+    fs.copyFileSync(outpath, desturl)
+  } else {
+    // upload to S3
+    await S3.putObject({
+      Bucket: DEST_BUCKET,
+      Key: keyjpg,
+      Body: fs.createReadStream(outpath)
+    }).promise()
+
+    // invoke next Lambda
+    const payload = {
+      key: key,
+      bucket: bucket
     }
-    removeTmpDirectory(tmppath)
+    const params = {
+      FunctionName: CONVERT_LAMBDA,
+      InvocationType: 'Event',
+      Payload: JSON.stringify(payload)
+    }
+    await Lambda.invoke(params).promise()
+  }
+  tmpdir.removeTmpDirectory(tmppath)
 }
 
 exports.main = main

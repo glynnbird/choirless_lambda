@@ -1,6 +1,15 @@
+// env variables
+const CHOIRLESS_API_URL = process.env.CHOIRLESS_API_URL
+const CHOIRLESS_API_KEY = process.env.CHOIRLESS_API_KEY
+const DEST_BUCKET = process.env.DEST_BUCKET
+
+// node modules
 const axios = require('axios').default
 const boxjam = require('boxjam')
 const AWS = require('aws-sdk')
+
+// aws objects
+const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
 
 // reverse the order of a string
 const reverseString = (str) => {
@@ -9,8 +18,6 @@ const reverseString = (str) => {
 
 const handler = async (opts) => {
   console.log('renderer', opts)
-  // s3 client
-  s3 = new AWS.S3({apiVersion: '2006-03-01'});
 
   // look for a key in opts and pull songId and choidId from there
   const choirId = opts.choir_id
@@ -34,14 +41,14 @@ const handler = async (opts) => {
   // get the song parts from the API
   const req = {
     method: 'post',
-    baseURL: process.env.CHOIRLESS_API_URL,
+    baseURL: CHOIRLESS_API_URL,
     url: '/getChoirSongParts',
     data: {
       songId: songId,
       choirId: choirId
     },
-    headers:{
-      'x-api-key': process.env.CHOIRLESS_API_KEY
+    headers: {
+      'x-api-key': CHOIRLESS_API_KEY
     },
     responseType: 'json'
   }
@@ -54,7 +61,7 @@ const handler = async (opts) => {
     const partMap = {}
     const rectangles = []
     const hiddenParts = []
-    for (var i in response.parts) {
+    for (const i in response.parts) {
       const p = response.parts[i]
       if (!p.aspectRatio) {
         p.aspectRatio = '640:480'
@@ -138,19 +145,8 @@ const handler = async (opts) => {
 
     // write the definition to a COS bucket
     const key = [choirId, songId, name].join('+') + '.json'
-    await s3.putObject({ Bucket: process.env.DEST_BUCKET, Key: key, Body: JSON.stringify(output) }).promise()
+    await s3.putObject({ Bucket: DEST_BUCKET, Key: key, Body: JSON.stringify(output) }).promise()
     console.log('written key', key)
-
-    // call the status lambda
-    const lambda = new AWS.Lambda();
-    const payload = { ok: true, choir_id: choirId, song_id: songId, status: 'aligned' }
-    const params = {
-      FunctionName: process.env.STATUS_LAMBDA, // the lambda function we are going to invoke
-      InvocationType: 'Event',
-      Payload: JSON.stringify(payload)
-    };
-    await lambda.invoke(params).promise()
-
   } else {
     console.log('Nothing to do')
     return { ok: false }

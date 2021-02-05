@@ -18,14 +18,19 @@ const main = async (event, context) => {
 
   // invoke next Lambda
   const bits = path.parse(key).name.split('+')
-  const ret = {
+  const payload = {
     key: key,
     bucket: bucket,
     choir_id: bits[0],
     song_id: bits[1],
     part_id: bits[2]
   }
-  await Lambda.invokeAsync(RENDERER_LAMBDA, JSON.stringify(ret)).promise()
+  const params = {
+    FunctionName: RENDERER_LAMBDA,
+    InvocationType: 'Event',
+    Payload: JSON.stringify(payload)
+  }
+  await Lambda.invoke(params).promise()
 }
 
 exports.main = main

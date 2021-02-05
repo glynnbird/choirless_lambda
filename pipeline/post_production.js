@@ -3,14 +3,13 @@ const LOCAL_MODE = !!process.env.LOCAL_MODE
 const MISC_BUCKET = process.env.MISC_BUCKET
 const DEST_BUCKET = process.env.DEST_BUCKET
 const DEFINITION_BUCKET = process.env.DEFINITION_BUCKET
-const TMP_DIR = process.env.TMP_DIR || '/tmp'
 const LOCAL_BUCKETS_PATH = '../buckets'
 
 // node modules
 const fs = require('fs')
 const path = require('path')
 const aws = require('aws-sdk')
-const tmp = require('tmp')
+const tmpdir = require('tmpdir')
 const ffmpeg = require('fluent-ffmpeg')
 const run = require('ffmpegrunner').run
 
@@ -66,11 +65,11 @@ const buildComplexFilter = (outputWidth, outputHeight, reverbLevel) => {
 
   // audio pipeline
   f = {
-     inputs: '0:a', // audio on the main video
-     filter: 'asplit',
-     options: { },
-     outputs: ['a1', 'a2']
-   }
+    inputs: '0:a', // audio on the main video
+    filter: 'asplit',
+    options: { },
+    outputs: ['a1', 'a2']
+  }
   filters.push(f)
   f = {
     inputs: ['a1', '2'], // audio+ reverb impulse response
@@ -161,37 +160,34 @@ const main = async (event, context) => {
     definition.output.reverb)
   command.complexFilter(complexFilter.filters, complexFilter.outputs)
 
-  // create temporary directory - self cleaning
-  tmp.dir({ unsafeCleanup: true, tmpdir: TMP_DIR }, async (err, tmppath, done) => {
-    if (err) throw err
-    const outputKey = `${pk.choirId}+${pk.songId}+${pk.defId}-final.mp4`
-    const outpath = path.join(tmppath, outputKey)
+  // create temporary directory
+  const tmppath = tmpdir.createTmpDirectory()
+  const outputKey = `${pk.choirId}+${pk.songId}+${pk.defId}-final.mp4`
+  const outpath = path.join(tmppath, outputKey)
 
-    // set output parameters
-    command
-      .output(outpath)
-      .outputFormat('mp4') // mp4 container
-      .outputOptions([
-        '-pix_fmt yuv420p',
-        '-vcodec libx264', // h.264 video
-        '-preset veryfast']) // fast
-    await run(command, true)
+  // set output parameters
+  command
+    .output(outpath)
+    .outputFormat('mp4') // mp4 container
+    .outputOptions([
+      '-pix_fmt yuv420p',
+      '-vcodec libx264', // h.264 video
+      '-preset veryfast']) // fast
+  await run(command, true)
 
-    // copy the temporary file to output bucket
-    if (LOCAL_MODE) {
-      const desturl = path.join(LOCAL_BUCKETS_PATH, DEST_BUCKET, outputKey)
-      fs.copyFileSync(outpath, desturl)
-    } else {
-      // upload to S3
-      await S3.putObject({
-        Bucket: DEST_BUCKET,
-        Key: outputKey,
-        Body: fs.createReadStrean(outpath)
-      }).promise()
-    }
-    done()
-  })
-
+  // copy the temporary file to output bucket
+  if (LOCAL_MODE) {
+    const desturl = path.join(LOCAL_BUCKETS_PATH, DEST_BUCKET, outputKey)
+    fs.copyFileSync(outpath, desturl)
+  } else {
+    // upload to S3
+    await S3.putObject({
+      Bucket: DEST_BUCKET,
+      Key: outputKey,
+      Body: fs.createReadStream(outpath)
+    }).promise()
+  }
+  tmpdir.removeTmpDirectory(tmppath)
   return { ok: true }
 }
 

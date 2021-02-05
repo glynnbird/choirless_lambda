@@ -10,7 +10,6 @@ const crypto = require('crypto')
 const AWS = require('aws-sdk')
 const { v4: uuidv4 } = require('uuid')
 
-
 // aws objects
 const s3 = new AWS.S3({ apiVersion: '2006-03-01' })
 const lambda = new AWS.Lambda()
@@ -30,20 +29,20 @@ const main = async (event, context) => {
     const p = path.join(LOCAL_BUCKETS_PATH, bucket, key)
     definition = fs.readFileSync(p, { encoding: 'utf8' })
   } else {
-    definition = await S3.getObject({ Bucket: bucket, Key: key }).promise()
-    definition.Body
+    definition = await s3.getObject({ Bucket: bucket, Key: key }).promise()
+    definition = definition.Body
   }
   definition = JSON.parse(definition)
 
   // generate a new run id
-  const run_id = uuidv4().slice(0, 8)
+  const runId = uuidv4().slice(0, 8)
 
   // Get the inputs for this scene
-  const input_specs = definition.inputs
+  const inputSpecs = definition.inputs
 
   // Calculate number of rows
   let rows = new Set()
-  input_specs.forEach(spec => {
+  inputSpecs.forEach(spec => {
     const [x, y] = spec.position || [-1, -1]
     rows.add(y)
   })
@@ -51,16 +50,16 @@ const main = async (event, context) => {
   rows.sort((a, b) => parseInt(a) - parseInt(b))
 
   // Calculate the hash of our rows
-  const rows_str = rows.join('-')
-  const rows_hash = crypto.createHash('sha1').update(rows_str).digest('hex').slice(0, 8)
+  const rowsStr = rows.join('-')
+  const rowsHash = crypto.createHash('sha1').update(rowsStr).digest('hex').slice(0, 8)
 
   // Invoke all the child actions
   for (const i in rows) {
     const row = rows[i]
     const payload = {
       row_num: row,
-      run_id: run_id,
-      rows_hash: rows_hash,
+      run_id: runId,
+      rows_hash: rowsHash,
       compositor: 'combined',
       key: key,
       bucket: bucket,
@@ -82,7 +81,7 @@ const main = async (event, context) => {
 
   return {
     status: 'spawned children',
-    run_id: run_id,
+    run_id: runId,
     definition_key: key
   }
 }

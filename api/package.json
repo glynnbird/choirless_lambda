@@ -27,7 +27,7 @@
     "kuuid": "^0.6.0",
     "moment": "^2.29.1",
     "nano": "^9.0.1",
-    "tmp": "^0.2.1",
+    "tmpdir": "git+https://github.com/glynnbird/tmpdir.git",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
