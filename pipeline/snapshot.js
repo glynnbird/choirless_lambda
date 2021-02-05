@@ -16,6 +16,7 @@ const run = require('ffmpegrunner').run
 const S3 = new aws.S3()
 const Lambda = new aws.Lambda()
 
+
 const main = async (event, context) => {
   let key, bucket, geturl, desturl
   console.log('snapshot')
@@ -38,9 +39,8 @@ const main = async (event, context) => {
   console.log(`Running on ${bucket}/${key}`)
 
   // create temporary directory - self cleaning
-  tmp.dir({ unsafeCleanup: true }, async (err, tmppath, done) => {
-    if (err) throw err
-
+  const tmppath = createTmpDirectory();
+  
     // run ffmpeg to take a snapshot
     const keyjpg = key + '.jpg'
     const outpath = path.join(tmppath, keyjpg)
@@ -49,28 +49,36 @@ const main = async (event, context) => {
       .inputOptions('-seekable 0')
       .output(outpath)
       .outputOptions(['-format singlejpeg', '-vframes 1'])
+    console.log("about to run ffmpeg..")
     await run(command, true)
+    console.log("ffmpeg has run ")
 
     // copy the temporary file to output bucket
     if (LOCAL_MODE) {
       fs.copyFileSync(outpath, desturl)
     } else {
       // upload to S3
+      console.log("uploading to S3..")
       await S3.putObject({
         Bucket: DEST_BUCKET,
         Key: keyjpg,
-        Body: fs.createReadStrean(outpath)
+        Body: fs.createReadStream(outpath)
       }).promise()
 
       // invoke next Lambda
-      const ret = {
+      const payload = {
         key: key,
         bucket: bucket
       }
-      await Lambda.invokeAsync(CONVERT_LAMBDA, JSON.stringify(ret)).promise()
+      const params = {
+        FunctionName: CONVERT_LAMBDA,
+        InvocationType: 'Event',
+        Payload: JSON.stringify(payload)
+      }
+      console.log("Now invoking Lambda...")
+      await Lambda.invoke(params).promise()
     }
-    done()
-  })
+    removeTmpDirectory(tmppath)
 }
 
 exports.main = main
