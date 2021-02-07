@@ -16,7 +16,7 @@ const reverseString = (str) => {
   return str.split('').reverse().join('')
 }
 
-const handler = async (opts) => {
+const main = async (opts) => {
   console.log('renderer', opts)
 
   // look for a key in opts and pull songId and choidId from there
@@ -153,4 +153,4 @@ const handler = async (opts) => {
   }
 }
 
-exports.handler = handler
+exports.main = main

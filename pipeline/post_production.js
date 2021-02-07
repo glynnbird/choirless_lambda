@@ -172,7 +172,9 @@ const main = async (event, context) => {
     .outputOptions([
       '-pix_fmt yuv420p',
       '-vcodec libx264', // h.264 video
-      '-preset veryfast']) // fast
+      '-preset veryfast', // fast encoding
+      '-movflags +faststart']) // put meta data at the start of the file
+
   await run(command, true)
 
   // copy the temporary file to output bucket

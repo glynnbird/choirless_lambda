@@ -57,16 +57,29 @@ const buildComplexFilter = (videos) => {
     }
     aparts.push(video.id + ':a')
   }
+  // if there is only one video row, then we can't use vstack
+  // because it won't work with 1 input. So we use "copy" which
+  // does nothing but copy 0:v -> v.
+  if (vparts.length === 1) {
+    f = {
+      inputs: '0:v',
+      filter: 'copy',
+      options: {},
+      outputs: 'v'
+    }
+    filters.push(f)
+  } else {
   // video pipeline
-  f = {
-    inputs: vparts,
-    filter: 'vstack',
-    options: {
-      inputs: vparts.length
-    },
-    outputs: 'v'
+    f = {
+      inputs: vparts,
+      filter: 'vstack',
+      options: {
+        inputs: vparts.length
+      },
+      outputs: 'v'
+    }
+    filters.push(f)
   }
-  filters.push(f)
   f = {
     inputs: aparts,
     filter: 'amix',
@@ -78,7 +91,6 @@ const buildComplexFilter = (videos) => {
     outputs: 'a'
   }
   filters.push(f)
-  // add our filter graph to the command
   return {
     filters: filters,
     outputs: ['v', 'a']
@@ -112,7 +124,7 @@ const main = async (event, context) => {
     const p = path.join(LOCAL_BUCKETS_PATH, bucket, keyPrefix + '*')
     rowKeys = glob.sync(p)
   } else {
-    const response = S3.listObjects({ Bucket: bucket, Prefix: keyPrefix }).promise()
+    const response = await S3.listObjects({ Bucket: bucket, Prefix: keyPrefix }).promise()
     rowKeys = response.Contents.map((obj) => { return obj.Key })
   }
   rowKeys.sort()
