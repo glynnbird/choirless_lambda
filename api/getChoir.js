@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // fetch a choir by known id
 // Parameters:
@@ -11,12 +8,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // extract parameters
   const choirId = opts.choirId
@@ -33,9 +24,22 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('getChoir', choirId)
-    const choir = await db.get(choirId + ':0')
-    delete choir._id
-    delete choir._rev
+
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Key: {
+        pk: `choir#${choirId}`,
+        sk: '#profile'
+      }
+    }
+    console.log(req)
+    const response = await dynamoDB.documentClient.get(req).promise()
+    if (!response.Item) {
+      throw new Error('choir not found')
+    }
+    const choir = response.Item
+    delete choir.pk
+    delete choir.sk
     body = { ok: true, choir: choir }
   } catch (e) {
     body = { ok: false, message: 'choir not found' }
@@ -51,3 +55,4 @@ const handler = async (opts) => {
 }
 
 module.exports = { handler }
+handler({ choirId:'43'}).then(console.log)
