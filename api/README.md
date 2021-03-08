@@ -8,18 +8,11 @@ This API can be deployed to Lambda or run locally in Node.js. Application data i
 
 The following environment variables configure how the API accesses the database
 
-- `COUCH_URL` - the URL of the CouchDB/Cloudant service e.g. `http://admin:admin@localhost:5984`.
-- `COUCH_USERS_DATABASE` - the name of the users database, storing registered Choirless users.
-- `COUCH_CHOIRLESS_DATABASE` - the name of the main choirless database (stores choirs/members/songs/parts).
-- `COUCH_KEYS_DATABASE` - the name of the database for storing API access keys.
-- `COUCH_RENDER_DATABASE` - the name of the database to store render status objects.
-- `COUCH_INVITATION_DATABASE` - the name of the invitations database.
-- `LOCAL_MODE` - if `true` runs without authentication middleware
-- `COS_REGION` - the Cloudant object storage region
-- `COS_ACCESS_KEY_ID` - Cloud Object Storage credentials
-- `COS_ACCESS_KEY_SECRET` - Cloud Object Storage credentials
-- `COS_DEFAULT_BUCKET` - Cloud Object Storage raw upload bucket
-- `COS_ENDPOINT` - Cloud Object Storage endpoint
+- `REGION` - the AWS region to use e.g 'eu-west-1'
+- `TABLE` - the DynamoDB table to use e.g. 'choirless'
+- `TEST_MODE` - when set to `true` uses DynamoDB on localhost:8000 for test purposes
+- `RAW_BUCKET` - the name of the raw S3 bucket e.g. `raw`
+- `FINAL_BUCKET` - the name of the final S3 bucket e.g. `final`
 
 ## Testing
 

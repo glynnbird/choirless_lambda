@@ -1,11 +1,8 @@
 const ts = new Date().getTime()
 
 // the code we're testing
-process.env.COS_ACCESS_KEY_ID = 'xxxx1234'
-process.env.COS_ACCESS_KEY_SECRET = 'yyyy4321'
-process.env.COS_ENDPOINT = 's3.eu-gb.cloud-object-storage.appdomain.cloud'
-process.env.COS_REGION = 'eu-gb'
-process.env.COS_DEFAULT_BUCKET = 'choirless-videos-raw'
+process.env.RAW_BUCKET = 'choirless-videos-raw'
+process.env.FINAL_BUCKET = 'choirless-videos-final'
 
 // setting TEST_MODE forces us to use DynamoDB on localhost:8000
 process.env.TEST_MODE = 'true'

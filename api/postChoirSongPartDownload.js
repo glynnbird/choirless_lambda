@@ -1,6 +1,7 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const AWS = require('aws-sdk')
+const dynamoDB = require('./lib/dynamodb.js')
+const AWS = dynamoDB.AWS
 const S3 = new AWS.S3()
 
 // generate URL to allow upload of a song part's video
@@ -27,9 +28,9 @@ const handler = async (opts) => {
   const key = [opts.choirId, opts.songId, opts.partId].join('+') + '.webm'
 
   // generate pre-signed URL
-  const params = { Bucket: process.env.COS_DEFAULT_BUCKET, Key: key }
+  const params = { Bucket: process.env.RAW_BUCKET, Key: key }
   const url = await S3.getSignedUrlPromise('getObject', params)
-  const body = { ok: true, method: 'GET', url: url, bucket: process.env.COS_DEFAULT_BUCKET, key: key }
+  const body = { ok: true, method: 'GET', url: url, bucket: process.env.RAW_BUCKET, key: key }
 
   // return API response
   return {
