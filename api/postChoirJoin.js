@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // let a user join a choir
 // Parameters:
@@ -14,12 +11,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // extract parameters
   const now = new Date()
@@ -33,10 +24,21 @@ const handler = async (opts) => {
     }
   }
 
-  const id = opts.choirId + ':member:' + opts.userId
   let doc
   try {
-    doc = await db.get(id)
+    debug('postChoirJoin', opts.choirId, opts.userId)
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Key: {
+        pk: `choir#${opts.choirId}`,
+        sk: `#user#${opts.userId}`
+      }
+    }
+    const response = await dynamoDB.documentClient.get(req).promise()
+    if (!response.Item) {
+      throw new Error('choir membership not found')
+    }
+    doc = response.Item
     // If we got this far, the user is already a member of the choir.
     // If they are of the same member type, we needn't do anything else
     if (doc.memberType === opts.memberType) {
@@ -52,7 +54,10 @@ const handler = async (opts) => {
   } catch (e) {
     // new membership of choir
     doc = {
-      _id: id,
+      pk: `choir#${opts.choirId}`,
+      sk: `#user#${opts.userId}`,
+      GSI1PK: `user#${opts.userId}`,
+      GSI1SK: `#choir#${opts.choirId}`,
       type: 'choirmember',
       userId: opts.userId,
       choirId: opts.choirId,
@@ -67,8 +72,12 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('postChoirJoin write ', doc)
-    const response = await db.insert(doc)
-    body = { ok: true, choirId: response.id }
+    const req2 = {
+      TableName: dynamoDB.TABLE,
+      Item: doc
+    }
+    await dynamoDB.documentClient.put(req2).promise()
+    body = { ok: true, choirId: opts.choirId }
   } catch (e) {
     body = { ok: false }
     statusCode = 404

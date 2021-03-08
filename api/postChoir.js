@@ -1,10 +1,7 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const kuuid = require('kuuid')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // create/edit a choir
 // Parameters:
@@ -18,16 +15,11 @@ const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
 
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
-
   // extract parameters
   let choirId = opts.choirId
   const now = new Date()
   let doc = {}
+  let creationMode = false
 
   // check choirType is valid
   if (opts.choirType && !['private', 'public'].includes(opts.choirType)) {
@@ -42,7 +34,18 @@ const handler = async (opts) => {
   if (choirId) {
     try {
       debug('postChoir fetch choir', choirId)
-      doc = await db.get(choirId + ':0')
+      const req = {
+        TableName: dynamoDB.TABLE,
+        Key: {
+          pk: `choir#${choirId}`,
+          sk: '#profile'
+        }
+      }
+      const response = await dynamoDB.documentClient.get(req).promise()
+      if (!response.Item) {
+        throw new Error('choir not found')
+      }
+      doc = response.Item
       doc.name = opts.name ? opts.name : doc.name
       doc.description = opts.description ? opts.description : doc.description
       doc.choirType = opts.choirType ? opts.choirType : doc.choirType
@@ -61,9 +64,9 @@ const handler = async (opts) => {
         headers: { 'Content-Type': 'application/json' }
       }
     }
-    choirId = kuuid.id()
+    choirId = kuuid.ids()
+    creationMode = true
     doc = {
-      _id: choirId + ':0',
       type: 'choir',
       choirId: choirId,
       name: opts.name,
@@ -75,17 +78,27 @@ const handler = async (opts) => {
     }
   }
 
-  // write user to database
+  // write choir to database
   let statusCode = 200
   let body = null
   try {
     debug('postChoir write choir', doc)
-    await db.insert(doc)
+    doc.pk = `choir#${doc.choirId}`
+    doc.sk = '#profile'
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Item: doc
+    }
+    await dynamoDB.documentClient.put(req).promise()
+
     // if this is the creation of a new choir
-    if (!doc._rev) {
+    if (creationMode) {
       // add the choir creator as a member
       const member = {
-        _id: choirId + ':member:' + opts.createdByUserId,
+        pk: doc.pk,
+        sk: `#user#${opts.createdByUserId}`,
+        GSI1PK: `user#${opts.createdByUserId}`,
+        GSI1SK: `#${doc.pk}`,
         type: 'choirmember',
         choirId: choirId,
         userId: opts.createdByUserId,
@@ -93,7 +106,11 @@ const handler = async (opts) => {
         name: opts.createdByName,
         memberType: 'leader'
       }
-      await db.insert(member)
+      const req2 = {
+        TableName: dynamoDB.TABLE,
+        Item: member
+      }
+      await dynamoDB.documentClient.put(req2).promise()
     }
     body = { ok: true, choirId: choirId }
   } catch (e) {

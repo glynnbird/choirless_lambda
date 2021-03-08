@@ -24,7 +24,6 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('getChoir', choirId)
-
     const req = {
       TableName: dynamoDB.TABLE,
       Key: {
@@ -32,7 +31,6 @@ const handler = async (opts) => {
         sk: '#profile'
       }
     }
-    console.log(req)
     const response = await dynamoDB.documentClient.get(req).promise()
     if (!response.Item) {
       throw new Error('choir not found')
@@ -55,4 +53,3 @@ const handler = async (opts) => {
 }
 
 module.exports = { handler }
-handler({ choirId:'43'}).then(console.log)

@@ -1,8 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
+const dynamoDB = require('./lib/dynamodb')
 
 // delete a song and its parts
 // choirdId - the choir whose song is being changed
@@ -10,12 +8,6 @@ let db = null
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(process.env.COUCH_CHOIRLESS_DATABASE)
-  }
 
   // is this a request to edit an existing queue item
   if (!opts.choirId || !opts.songId) {
@@ -29,37 +21,47 @@ const handler = async (opts) => {
   // get invitation doc
   let statusCode = 200
   let body = { ok: true }
-  const id = opts.choirId + ':song:' + opts.songId
   try {
     // delete song
-    debug('deleteSong', id)
-    const doc = await db.get(id)
-    await db.destroy(id, doc._rev)
+    debug('deleteSong', opts.choirId, opts.songId)
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Key: {
+        pk: `choir#${opts.choirId}`,
+        sk: `#song#${opts.songId}`
+      }
+    }
+    await dynamoDB.documentClient.delete(req).promise()
 
     // delete song parts
-    debug('getChoirSongParts', opts.songId)
-    const query = {
-      selector: {
-        type: 'songpart',
-        songId: opts.songId
+    // first fetch them
+    const req2 = {
+      TableName: dynamoDB.TABLE,
+      KeyConditions: {
+        pk: { ComparisonOperator: 'EQ', AttributeValueList: [`song#${opts.songId}`] },
+        sk: { ComparisonOperator: 'BEGINS_WITH', AttributeValueList: ['#part#'] }
       }
     }
-    const docs = []
-    const results = await db.partitionedFind(opts.choirId, query)
-    for (const i in results.docs) {
-      const part = results.docs[i]
-      const obj = {
-        _id: part._id,
-        _rev: part._rev,
-        _deleted: true
-      }
-      docs.push(obj)
-    }
-    if (docs.length > 0) {
-      await db.bulk({ docs: docs })
+    const response = await dynamoDB.documentClient.query(req2).promise()
+
+    // if there are song parts to delete
+    if (response.Items.length > 0) {
+      // build an array of DeleteRequests
+      const operations = response.Items.map((i) => {
+        return { DeleteRequest: { Key: { pk: i.pk, sk: i.sk } } }
+      })
+
+      // batch them in 25s - maximum batch size for DynamoDB
+      do {
+        const ops = operations.splice(0, 25)
+        const r = {
+          RequestItems: { }
+        }
+        r.RequestItems[dynamoDB.TABLE] = ops
+        await dynamoDB.documentClient.batchWrite(r).promise()
+      } while (operations.length > 0)
     }
   } catch (e) {
-    console.log(e)
     body = { ok: false, err: 'Failed to delete song' }
     statusCode = 404
   }

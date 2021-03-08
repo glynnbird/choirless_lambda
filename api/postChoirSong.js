@@ -1,10 +1,7 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const kuuid = require('kuuid')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // create/edit a choir's song
 // Parameters:
@@ -17,12 +14,6 @@ const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
 
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
-
   // extract parameters
   const choirId = opts.choirId
   const now = new Date()
@@ -32,10 +23,22 @@ const handler = async (opts) => {
   // is this a request to edit an existing choir
   if (opts.choirId && opts.songId) {
     try {
-      debug('postChoirSong fetch song', choirId)
-      doc = await db.get(opts.choirId + ':song:' + opts.songId)
+      debug('postChoirSong fetch song', choirId, opts.songId)
+      const req = {
+        TableName: dynamoDB.TABLE,
+        Key: {
+          pk: `choir#${choirId}`,
+          sk: `#song#${opts.songId}`
+        }
+      }
+      const response = await dynamoDB.documentClient.get(req).promise()
+      if (!response.Item) {
+        throw new Error('song not found')
+      }
+      doc = response.Item
       doc.name = opts.name ? opts.name : doc.name
       doc.description = opts.description ? opts.description : doc.description
+      doc.partNames = opts.partNames ? opts.partNames : doc.partNames
       songId = opts.songId
     } catch (e) {
       return {
@@ -52,20 +55,17 @@ const handler = async (opts) => {
         headers: { 'Content-Type': 'application/json' }
       }
     }
-    songId = kuuid.id()
-    let partNames = []
-    if (opts.partNames) {
-      partNames = opts.partNames.map((p) => { return { partNameId: kuuid.id(), name: p } })
-    }
+    songId = kuuid.ids()
     doc = {
-      _id: opts.choirId + ':song:' + songId,
+      pk: `choir#${choirId}`,
+      sk: `#song#${songId}`,
       type: 'song',
       songId: songId,
-      choirId: opts.choirId,
+      choirId: choirId,
       userId: opts.userId,
       name: opts.name,
       description: opts.description || '',
-      partNames: partNames,
+      partNames: opts.partNames || [],
       createdOn: now.toISOString()
     }
   }
@@ -75,9 +75,13 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('postChoirSong write song', doc)
-    await db.insert(doc)
-    delete doc._rev
-    delete doc._id
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Item: doc
+    }
+    await dynamoDB.documentClient.put(req).promise()
+    delete doc.pk
+    delete doc.sk
     body = { ok: true, songId: songId, song: doc }
   } catch (e) {
     body = { ok: false }

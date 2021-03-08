@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // fetch choir members
 // Parameters:
@@ -11,12 +8,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // extract parameters
   const choirId = opts.choirId
@@ -33,20 +24,22 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('getChoirMembers', choirId)
-    const query = {
-      selector: {
-        type: 'choirmember'
+    const req = {
+      TableName: dynamoDB.TABLE,
+      KeyConditions: {
+        pk: { ComparisonOperator: 'EQ', AttributeValueList: [`choir#${choirId}`] },
+        sk: { ComparisonOperator: 'BEGINS_WITH', AttributeValueList: ['#user#'] }
       }
     }
-    const response = await db.partitionedFind(choirId, query)
+    const response = await dynamoDB.documentClient.query(req).promise()
     body = {
       ok: true,
-      members: response.docs.map((m) => {
-        delete m._id
-        delete m._rev
-        // infer userType if missing
-        m.userType = m.userType ? m.userType : 'regular'
-        return m
+      members: response.Items.map((i) => {
+        delete i.GSI1PK
+        delete i.GSI1SK
+        delete i.pk
+        delete i.sk
+        return i
       })
     }
   } catch (e) {

@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // fetch a song knowing choirId/songId
 // Parameters:
@@ -12,12 +9,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // extract parameters
   if (!opts.choirId || !opts.songId) {
@@ -32,11 +23,21 @@ const handler = async (opts) => {
   let statusCode = 200
   let body = null
   try {
-    const id = opts.choirId + ':song:' + opts.songId
-    debug('getChoirSong', id)
-    const song = await db.get(id)
-    delete song._id
-    delete song._rev
+    debug('getChoirSong', opts.choirId, opts.songId)
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Key: {
+        pk: `choir#${opts.choirId}`,
+        sk: `#song#${opts.songId}`
+      }
+    }
+    const response = await dynamoDB.documentClient.get(req).promise()
+    if (!response.Item) {
+      throw new Error('song not found')
+    }
+    const song = response.Item
+    delete song.pk
+    delete song.sk
     body = { ok: true, song: song }
   } catch (e) {
     body = { ok: false, message: 'song not found' }

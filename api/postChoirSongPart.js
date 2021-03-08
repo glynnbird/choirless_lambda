@@ -1,10 +1,7 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const kuuid = require('kuuid')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const dynamoDB = require('./lib/dynamodb')
 
 // create/edit a choir's song part
 // Parameters:
@@ -19,12 +16,6 @@ const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
 
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
-
   // extract parameters
   const now = new Date()
   let partId
@@ -33,9 +24,18 @@ const handler = async (opts) => {
   // is this a request to edit an existing song part
   if (opts.choirId && opts.songId && opts.partId) {
     try {
-      const id = opts.choirId + ':song:' + opts.songId + ':part:' + opts.partId
-      debug('postChoirSongPart fetch partId', id)
-      doc = await db.get(id)
+      const req = {
+        TableName: dynamoDB.TABLE,
+        Key: {
+          pk: `song#${opts.songId}`,
+          sk: `#part#${opts.partId}`
+        }
+      }
+      const response = await dynamoDB.documentClient.get(req).promise()
+      if (!response.Item) {
+        throw new Error('songpart not found')
+      }
+      doc = response.Item
       doc.partType = opts.partType ? opts.partType : doc.partType
       doc.offset = typeof opts.offset === 'number' ? opts.offset : doc.offset
       doc.frontendOffset = typeof opts.frontendOffset === 'number' ? opts.frontendOffset : doc.frontendOffset || 0
@@ -59,9 +59,10 @@ const handler = async (opts) => {
         headers: { 'Content-Type': 'application/json' }
       }
     }
-    partId = kuuid.id()
+    partId = kuuid.ids()
     doc = {
-      _id: opts.choirId + ':song:' + opts.songId + ':part:' + partId,
+      pk: `song#${opts.songId}`,
+      sk: `#part#${partId}`,
       type: 'songpart',
       partId: partId,
       songId: opts.songId,
@@ -69,12 +70,11 @@ const handler = async (opts) => {
       userId: opts.userId,
       userName: opts.userName,
       createdOn: now.toISOString(),
-      partNameId: opts.partNameId || '',
       partName: opts.partName || '',
       partType: opts.partType || 'backing',
       offset: opts.offset || 0,
       frontendOffset: opts.frontendOffset || 0,
-      aspectRatio: opts.aspectRatio || '',
+      aspectRatio: opts.aspectRatio || '640:480',
       volume: opts.volume || 1.0,
       hidden: false,
       audio: typeof opts.audio === 'boolean' ? opts.audio : false
@@ -86,7 +86,11 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('postChoirSongPart write data', doc)
-    await db.insert(doc)
+    const req = {
+      TableName: dynamoDB.TABLE,
+      Item: doc
+    }
+    await dynamoDB.documentClient.put(req).promise()
     body = { ok: true, partId: partId }
   } catch (e) {
     body = { ok: false }

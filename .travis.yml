@@ -1,7 +1,7 @@
 language: "node_js"
 node_js:
   - "node"
-  - "12"
+  - "14"
 env:
   - TEST_DIR=api
 script: cd $TEST_DIR && npm install && npm test
@@ -10,7 +10,7 @@ services:
 os:
   - linux
 before_script:
-  - ./api/scripts/run_couchdb_on_travis.sh
+  - ./api/scripts/run_dynamo_db.sh
 after_script:
-  - ./api/scripts/stop_couchdb_on_travis.sh
+  - ./api/scripts/stop_dynamo_db.sh
 

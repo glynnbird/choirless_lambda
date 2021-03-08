@@ -23,12 +23,17 @@ The following environment variables configure how the API accesses the database
 
 ## Testing
 
-Run the automated test suite with:
+Start DynamoDB locally:
+
+```sh
+docker run -p 8000:8000 amazon/dynamodb-local
+```
+
+Execute the tests
 
 ```sh
 npm run test
 ```
-
 Tests are configured to run automatically in Travis.
 
 ## API Reference
@@ -50,41 +55,9 @@ The following objects are stored:
 +-------------+       +--------/-\-----------+         +-----/-\------+
 |             |       |                      |         |              |
 |    user     +-------+     choirmember      |         |  songpart    |
-|             |       |                      |         |              |
+|  (cognito)  |       |                      |         |              |
 +-------------+       +----------------------+         +--------------+
-
-+-------------+
-|             |
-| invitation  |
-|             |
-+-------------+
-
-+-------------+
-|             |
-|   render    |
-|             |
-+-------------+
 ```
-
-### Users
-
-```js
-{
-  _id: "<userid>",
-  type: "user",
-  userId: "<userid>",
-  userType: "regular",
-  name: "Glynn Bird",
-  email: "bob@aol.com",
-  createdOn: "2018-01-26",
-  verified: true,
-  password: "<sha256(salt + password)>",
-  salt: "<some random data>"
-}
-```
-
-- `userType` can be `regular` or `admin`.
-
 
 ### Choirs
 
@@ -117,6 +90,7 @@ choirType:
   userId: "<userid>",
   joined: "2020-05-02",
   name: "Glynn Bird",
+  choirName: "Barber Shop Choir",
   memberType: "leader"
 }
 ```
@@ -138,16 +112,7 @@ memberType:
   songId: "<songid>",
   userId: "<userid>",
   createdOn: "2020-05-01",
-  partNames: [
-    {
-      partNameId: "abc",
-      name: "baritone",
-    },
-    {
-      partNameId: "def",
-      name: "tenor"
-    }
-  ]
+  partNames: [ "backing", "soprano", "alto", "tenor", "bass" ]
 }
 ```
 
@@ -179,31 +144,3 @@ partType:
 - `backing` - backing track
 - `reference` - exemplar rendition of part
 - `rendition` - choir members rendition of a reference part
-
-### Invitation
-
-This allows a user to extend an invitation to new user to join the choir:
-
-```js
-{
-  
-  creator: '<id of user who created the invite>',
-  invitee: '<email of invited user>',
-  choirId: '<id of choir>',
-  expires: <expiry timestamp of invite>
-}
-```
-
-### Render
-
-This records progress of the rendering process:
-
-```js
-{
-  choirId: '<id of choir whose song is being rendererd>',
-  songId: '<id of song being rendererd>',
-  partId: "<id of the part that triggered the render>",
-  status: "new", // one of new/converted/aligned/rendered/composited/done
-  date: "2020-08-01T10:56:22.000Z"
-}
-```
