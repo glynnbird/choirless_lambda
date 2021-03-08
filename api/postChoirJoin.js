@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // let a user join a choir
 // Parameters:
@@ -28,13 +28,13 @@ const handler = async (opts) => {
   try {
     debug('postChoirJoin', opts.choirId, opts.userId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Key: {
         pk: `choir#${opts.choirId}`,
         sk: `#user#${opts.userId}`
       }
     }
-    const response = await dynamoDB.documentClient.get(req).promise()
+    const response = await aws.documentClient.get(req).promise()
     if (!response.Item) {
       throw new Error('choir membership not found')
     }
@@ -73,10 +73,10 @@ const handler = async (opts) => {
   try {
     debug('postChoirJoin write ', doc)
     const req2 = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Item: doc
     }
-    await dynamoDB.documentClient.put(req2).promise()
+    await aws.documentClient.put(req2).promise()
     body = { ok: true, choirId: opts.choirId }
   } catch (e) {
     body = { ok: false }

@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // delete a song and its parts
 // choirdId - the choir whose song is being changed
@@ -25,24 +25,24 @@ const handler = async (opts) => {
     // delete song
     debug('deleteSong', opts.choirId, opts.songId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Key: {
         pk: `choir#${opts.choirId}`,
         sk: `#song#${opts.songId}`
       }
     }
-    await dynamoDB.documentClient.delete(req).promise()
+    await aws.documentClient.delete(req).promise()
 
     // delete song parts
     // first fetch them
     const req2 = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       KeyConditions: {
         pk: { ComparisonOperator: 'EQ', AttributeValueList: [`song#${opts.songId}`] },
         sk: { ComparisonOperator: 'BEGINS_WITH', AttributeValueList: ['#part#'] }
       }
     }
-    const response = await dynamoDB.documentClient.query(req2).promise()
+    const response = await aws.documentClient.query(req2).promise()
 
     // if there are song parts to delete
     if (response.Items.length > 0) {
@@ -57,8 +57,8 @@ const handler = async (opts) => {
         const r = {
           RequestItems: { }
         }
-        r.RequestItems[dynamoDB.TABLE] = ops
-        await dynamoDB.documentClient.batchWrite(r).promise()
+        r.RequestItems[aws.TABLE] = ops
+        await aws.documentClient.batchWrite(r).promise()
       } while (operations.length > 0)
     }
   } catch (e) {

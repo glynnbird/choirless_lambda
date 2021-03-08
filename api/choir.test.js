@@ -8,7 +8,7 @@ process.env.FINAL_BUCKET = 'choirless-videos-final'
 process.env.TEST_MODE = 'true'
 const DYNAMODB_TABLE = `choirlesstest${ts}`
 process.env.TABLE = DYNAMODB_TABLE
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws')
 
 // the code to test
 const postChoir = require('./postChoir.js').handler
@@ -97,7 +97,7 @@ beforeAll(async () => {
     ]
   }
   try {
-    await dynamoDB.client.createTable(params).promise()
+    await aws.dynamoDBClient.createTable(params).promise()
   } catch (e) {
   }
   // test user ids
@@ -973,5 +973,5 @@ afterAll(async () => {
   const params = {
     TableName: DYNAMODB_TABLE
   }
-  await dynamoDB.client.deleteTable(params).promise()
+  await aws.dynamoDBClient.deleteTable(params).promise()
 })

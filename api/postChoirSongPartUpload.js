@@ -1,8 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb.js')
-const AWS = dynamoDB.AWS
-const S3 = new AWS.S3()
+const S3 = require('./lib/aws.js').S3
 
 // generate URL to allow upload of a song part's video
 // Parameters:

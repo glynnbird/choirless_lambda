@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // fetch a song part knowing choirId/songId/partId
 // Parameters:
@@ -26,13 +26,13 @@ const handler = async (opts) => {
   try {
     debug('getChoirSong', opts.choirId, opts.songId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Key: {
         pk: `song#${opts.songId}`,
         sk: `#part#${opts.partId}`
       }
     }
-    const response = await dynamoDB.documentClient.get(req).promise()
+    const response = await aws.documentClient.get(req).promise()
     if (!response.Item) {
       throw new Error('songpart not found')
     }

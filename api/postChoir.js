@@ -1,7 +1,7 @@
 const debug = require('debug')('choirless')
 const kuuid = require('kuuid')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // create/edit a choir
 // Parameters:
@@ -35,13 +35,13 @@ const handler = async (opts) => {
     try {
       debug('postChoir fetch choir', choirId)
       const req = {
-        TableName: dynamoDB.TABLE,
+        TableName: aws.TABLE,
         Key: {
           pk: `choir#${choirId}`,
           sk: '#profile'
         }
       }
-      const response = await dynamoDB.documentClient.get(req).promise()
+      const response = await aws.documentClient.get(req).promise()
       if (!response.Item) {
         throw new Error('choir not found')
       }
@@ -86,10 +86,10 @@ const handler = async (opts) => {
     doc.pk = `choir#${doc.choirId}`
     doc.sk = '#profile'
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Item: doc
     }
-    await dynamoDB.documentClient.put(req).promise()
+    await aws.documentClient.put(req).promise()
 
     // if this is the creation of a new choir
     if (creationMode) {
@@ -107,10 +107,10 @@ const handler = async (opts) => {
         memberType: 'leader'
       }
       const req2 = {
-        TableName: dynamoDB.TABLE,
+        TableName: aws.TABLE,
         Item: member
       }
-      await dynamoDB.documentClient.put(req2).promise()
+      await aws.documentClient.put(req2).promise()
     }
     body = { ok: true, choirId: choirId }
   } catch (e) {

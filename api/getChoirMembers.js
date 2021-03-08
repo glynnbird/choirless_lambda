@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // fetch choir members
 // Parameters:
@@ -25,13 +25,13 @@ const handler = async (opts) => {
   try {
     debug('getChoirMembers', choirId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       KeyConditions: {
         pk: { ComparisonOperator: 'EQ', AttributeValueList: [`choir#${choirId}`] },
         sk: { ComparisonOperator: 'BEGINS_WITH', AttributeValueList: ['#user#'] }
       }
     }
-    const response = await dynamoDB.documentClient.query(req).promise()
+    const response = await aws.documentClient.query(req).promise()
     body = {
       ok: true,
       members: response.Items.map((i) => {

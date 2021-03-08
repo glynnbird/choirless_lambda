@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // delete an invitation
 // choirdId - the choir whose song is being changed
@@ -25,13 +25,13 @@ const handler = async (opts) => {
   try {
     debug('deleteSongPart', opts.songId, opts.partId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Key: {
         pk: `song#${opts.songId}`,
         sk: `#part#${opts.partId}`
       }
     }
-    await dynamoDB.documentClient.delete(req).promise()
+    await aws.documentClient.delete(req).promise()
   } catch (e) {
     body = { ok: false, err: 'Failed to delete song part' }
     statusCode = 404

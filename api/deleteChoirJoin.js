@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // delete user's membership of a choir
 // Parameters:
@@ -25,13 +25,13 @@ const handler = async (opts) => {
     // load and delete the membership doc
     debug('deleteChoirJoin', opts.choirId, opts.userId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Key: {
         pk: `choir#${opts.choirId}`,
         sk: `#user#${opts.userId}`
       }
     }
-    await dynamoDB.documentClient.delete(req).promise()
+    await aws.documentClient.delete(req).promise()
   } catch (e) {
     // if we got here, we weren't a member anyway!
     body.ok = false

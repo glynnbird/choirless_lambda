@@ -1,7 +1,7 @@
 const debug = require('debug')('choirless')
 const kuuid = require('kuuid')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // create/edit a choir's song part
 // Parameters:
@@ -25,13 +25,13 @@ const handler = async (opts) => {
   if (opts.choirId && opts.songId && opts.partId) {
     try {
       const req = {
-        TableName: dynamoDB.TABLE,
+        TableName: aws.TABLE,
         Key: {
           pk: `song#${opts.songId}`,
           sk: `#part#${opts.partId}`
         }
       }
-      const response = await dynamoDB.documentClient.get(req).promise()
+      const response = await aws.documentClient.get(req).promise()
       if (!response.Item) {
         throw new Error('songpart not found')
       }
@@ -87,10 +87,10 @@ const handler = async (opts) => {
   try {
     debug('postChoirSongPart write data', doc)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Item: doc
     }
-    await dynamoDB.documentClient.put(req).promise()
+    await aws.documentClient.put(req).promise()
     body = { ok: true, partId: partId }
   } catch (e) {
     body = { ok: false }

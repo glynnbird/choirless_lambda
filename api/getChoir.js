@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-const dynamoDB = require('./lib/dynamodb')
+const aws = require('./lib/aws.js')
 
 // fetch a choir by known id
 // Parameters:
@@ -25,13 +25,13 @@ const handler = async (opts) => {
   try {
     debug('getChoir', choirId)
     const req = {
-      TableName: dynamoDB.TABLE,
+      TableName: aws.TABLE,
       Key: {
         pk: `choir#${choirId}`,
         sk: '#profile'
       }
     }
-    const response = await dynamoDB.documentClient.get(req).promise()
+    const response = await aws.documentClient.get(req).promise()
     if (!response.Item) {
       throw new Error('choir not found')
     }
