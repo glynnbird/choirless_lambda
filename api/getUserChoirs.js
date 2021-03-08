@@ -1,22 +1,14 @@
 
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
+const aws = require('./lib/aws.js')
 
-// fetch a user by known IP address
+// get a list of choirs a user belongs to
 // Parameters:
 // - userId - the id of the user to fetch
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(process.env.COUCH_CHOIRLESS_DATABASE)
-  }
 
   // extract parameters
   const userId = opts.userId
@@ -28,33 +20,28 @@ const handler = async (opts) => {
     }
   }
 
-  // fetch user from database
+  // fetch choir memberships
   let statusCode = 200
   let body = null
   try {
     debug('getUserChoirs', userId)
-    const query = {
-      selector: {
-        userId: userId,
-        type: 'choirmember'
-      },
-      fields: ['choirId']
+    const req = {
+      TableName: aws.TABLE,
+      IndexName: 'gsi1',
+      KeyConditions: {
+        GSI1PK: { ComparisonOperator: 'EQ', AttributeValueList: [`user#${opts.userId}`] },
+        GSI1SK: { ComparisonOperator: 'BEGINS_WITH', AttributeValueList: ['#choir#'] }
+      }
     }
-    const memberships = await db.find(query)
-
-    // load choirs that this user is a member of
-    const choirIdList = memberships.docs.map((d) => { return d.choirId + ':0' })
-    let choirs = { rows: [] }
-    if (choirIdList.length > 0) {
-      choirs = await db.list({ keys: choirIdList, include_docs: true })
-    }
+    const response = await aws.documentClient.query(req).promise()
     body = {
       ok: true,
-      choirs: choirs.rows.map((m) => {
-        const d = m.doc
-        delete d._id
-        delete d._rev
-        return d
+      choirs: response.Items.map((i) => {
+        delete i.GSI1PK
+        delete i.GSI1SK
+        delete i.pk
+        delete i.sk
+        return i
       })
     }
   } catch (e) {

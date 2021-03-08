@@ -1,8 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
+const aws = require('./lib/aws.js')
 
 // delete an invitation
 // choirdId - the choir whose song is being changed
@@ -11,12 +9,6 @@ let db = null
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(process.env.COUCH_CHOIRLESS_DATABASE)
-  }
 
   // check mandatory parameters
   if (!opts.choirId || !opts.songId || !opts.partId) {
@@ -30,11 +22,16 @@ const handler = async (opts) => {
   // delete song part
   let statusCode = 200
   let body = { ok: true }
-  const id = opts.choirId + ':song:' + opts.songId + ':part:' + opts.partId
   try {
-    debug('deleteSongPart', id)
-    const doc = await db.get(id)
-    await db.destroy(id, doc._rev)
+    debug('deleteSongPart', opts.songId, opts.partId)
+    const req = {
+      TableName: aws.TABLE,
+      Key: {
+        pk: `song#${opts.songId}`,
+        sk: `#part#${opts.partId}`
+      }
+    }
+    await aws.documentClient.delete(req).promise()
   } catch (e) {
     body = { ok: false, err: 'Failed to delete song part' }
     statusCode = 404

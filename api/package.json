@@ -18,6 +18,7 @@
   "author": "Glynn Bird <glynn.bird@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "aws-sdk": "^2.858.0",
     "axios": "^0.21.1",
     "boxjam": "0.0.21",
     "debug": "^4.3.1",
@@ -26,7 +27,6 @@
     "glob": "^7.1.6",
     "kuuid": "^0.6.0",
     "moment": "^2.29.1",
-    "nano": "^9.0.1",
     "tmpdir": "git+https://github.com/glynnbird/tmpdir.git",
     "uuid": "^8.3.2"
   },

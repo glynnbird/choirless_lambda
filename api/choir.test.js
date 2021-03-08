@@ -1,23 +1,16 @@
-const COUCH_URL = 'http://admin:admin@localhost:5984'
 const ts = new Date().getTime()
-const DB1 = 'choirtest_users_' + ts
-const DB2 = 'choirtest_main_' + ts
-const DB3 = 'choirtest_queue_' + ts
-const Nano = require('nano')
-const nano = Nano(COUCH_URL)
 
 // the code we're testing
-process.env.COUCH_URL = COUCH_URL
-process.env.COUCH_USERS_DATABASE = DB1
-process.env.COUCH_CHOIRLESS_DATABASE = DB2
-process.env.COUCH_QUEUE_DATABASE = DB3
-process.env.COS_ACCESS_KEY_ID = 'xxxx1234'
-process.env.COS_ACCESS_KEY_SECRET = 'yyyy4321'
-process.env.COS_ENDPOINT = 's3.eu-gb.cloud-object-storage.appdomain.cloud'
-process.env.COS_REGION = 'eu-gb'
-process.env.COS_DEFAULT_BUCKET = 'choirless-videos-raw'
+process.env.RAW_BUCKET = 'choirless-videos-raw'
+process.env.FINAL_BUCKET = 'choirless-videos-final'
 
-const postUser = require('./postUser.js').handler
+// setting TEST_MODE forces us to use DynamoDB on localhost:8000
+process.env.TEST_MODE = 'true'
+const DYNAMODB_TABLE = `choirlesstest${ts}`
+process.env.TABLE = DYNAMODB_TABLE
+const aws = require('./lib/aws')
+
+// the code to test
 const postChoir = require('./postChoir.js').handler
 const getChoir = require('./getChoir.js').handler
 const getChoirMembers = require('./getChoirMembers.js').handler
@@ -26,8 +19,6 @@ const deleteChoirJoin = require('./deleteChoirJoin.js').handler
 const postChoirSong = require('./postChoirSong.js').handler
 const getChoirSong = require('./getChoirSong.js').handler
 const getChoirSongs = require('./getChoirSongs.js').handler
-const postChoirSongPartName = require('./postChoirSongPartName.js').handler
-const deleteChoirSongPartName = require('./deleteChoirSongPartName.js').handler
 const postChoirSongPart = require('./postChoirSongPart.js').handler
 const postChoirSongPartUpload = require('./postChoirSongPartUpload.js').handler
 const postChoirSongPartDownload = require('./postChoirSongPartDownload.js').handler
@@ -44,59 +35,76 @@ let song1, song2
 let part1, part2, part3
 
 beforeAll(async () => {
-  await nano.db.create(DB1)
-  await nano.db.create(DB2, { partitioned: true })
-  await nano.db.create(DB3)
-  let obj = {
-    name: 'Bob',
-    email: 'bob@aol.com',
-    password: 'sausages'
+  // create dynamoDB table
+  const params = {
+    AttributeDefinitions: [
+      {
+        AttributeName: 'pk',
+        AttributeType: 'S'
+      },
+      {
+        AttributeName: 'sk',
+        AttributeType: 'S'
+      },
+      {
+        AttributeName: 'GSI1PK',
+        AttributeType: 'S'
+      },
+      {
+        AttributeName: 'GSI1SK',
+        AttributeType: 'S'
+      }
+    ],
+    KeySchema: [
+      {
+        AttributeName: 'pk',
+        KeyType: 'HASH'
+      },
+      {
+        AttributeName: 'sk',
+        KeyType: 'RANGE'
+      }
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 50,
+      WriteCapacityUnits: 50
+    },
+    TableName: DYNAMODB_TABLE,
+    StreamSpecification: {
+      StreamEnabled: false
+    },
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'gsi1',
+        Projection: {
+          ProjectionType: 'ALL'
+        },
+        KeySchema: [
+          {
+            AttributeName: 'GSI1PK',
+            KeyType: 'HASH'
+          },
+          {
+            AttributeName: 'GSI1SK',
+            KeyType: 'RANGE'
+          }
+        ],
+        ProvisionedThroughput: {
+          ReadCapacityUnits: '50',
+          WriteCapacityUnits: '50'
+        }
+      }
+    ]
   }
-  let response = await postUser(obj)
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  bob = response.body.userId
-
-  obj = {
-    name: 'Sue',
-    email: 'sue@aol.com',
-    password: 'cakes'
+  try {
+    await aws.dynamoDBClient.createTable(params).promise()
+  } catch (e) {
   }
-  response = await postUser(obj)
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  sue = response.body.userId
-
-  obj = {
-    name: 'Rita',
-    email: 'rita@aol.com',
-    password: 'rabbits'
-  }
-  response = await postUser(obj)
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  rita = response.body.userId
-
-  obj = {
-    name: 'Frank',
-    email: 'frank@aol.com',
-    password: 'flowers'
-  }
-  response = await postUser(obj)
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  frank = response.body.userId
-
-  // create indexes
-  const db2 = nano.db.use(DB2)
-  await db2.createIndex({ index: { fields: ['type'] }, name: 'byType', partitioned: true })
-  await db2.createIndex({ index: { fields: ['userId', 'type'] }, name: 'byUserIdType', partitioned: false })
+  // test user ids
+  bob = '1'
+  sue = '2'
+  rita = '3'
+  frank = '4'
 })
 
 test('postChoir - invalid parameters', async () => {
@@ -393,26 +401,15 @@ test('join choir - new members', async () => {
 
 test('remove from choir - delete members', async () => {
   // frank's out
-  let obj = {
+  const obj = {
     userId: frank,
     choirId: london
   }
-  let response = await deleteChoirJoin(obj)
+  const response = await deleteChoirJoin(obj)
   expect(typeof response.body).toBe('string')
   response.body = JSON.parse(response.body)
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
-
-  // but he can't be kicked out twice
-  obj = {
-    userId: frank,
-    choirId: london
-  }
-  response = await deleteChoirJoin(obj)
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(404)
-  expect(response.body.ok).toBe(false)
 })
 
 test('getChoirMembers - check membership again', async () => {
@@ -555,181 +552,6 @@ test('getChoirSongs - edit song', async () => {
   expect(response.statusCode).toBe(200)
   expect(response.body.ok).toBe(true)
   expect(response.body.songs.length).toBe(0)
-})
-
-test('postChoirSongPartName - add part name', async () => {
-  let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'abc123', name: 'tenor' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames).toStrictEqual([{ partNameId: 'abc123', name: 'tenor' }])
-})
-
-test('postChoirSongPartName - add another partname name', async () => {
-  let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'def456', name: 'soprano' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames).toStrictEqual([{ partNameId: 'abc123', name: 'tenor' }, { partNameId: 'def456', name: 'soprano' }])
-})
-
-test('postChoirSongPartName - add another partname name', async () => {
-  let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'ghi789', name: 'alto' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames).toStrictEqual([{ partNameId: 'abc123', name: 'tenor' }, { partNameId: 'def456', name: 'soprano' }, { partNameId: 'ghi789', name: 'alto' }])
-})
-
-test('postChoirSongPartName - add another another partname name', async () => {
-  let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'yyy', name: 'backing' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames).toStrictEqual([{ partNameId: 'abc123', name: 'tenor' }, { partNameId: 'def456', name: 'soprano' }, { partNameId: 'ghi789', name: 'alto' }, { partNameId: 'yyy', name: 'backing' }])
-})
-
-test('postChoirSongPartName - modify partname name', async () => {
-  let response = await postChoirSongPartName({ choirId: london, songId: song1, partNameId: 'def456', name: 'metzosoprano' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames).toStrictEqual([{ partNameId: 'abc123', name: 'tenor' }, { partNameId: 'def456', name: 'metzosoprano' }, { partNameId: 'ghi789', name: 'alto' }, { partNameId: 'yyy', name: 'backing' }])
-})
-
-test('postChoirSongPartName - add another another partname name - auto gen id', async () => {
-  let response = await postChoirSongPartName({ choirId: london, songId: song1, name: 'harmonies' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames.length).toBe(5)
-})
-
-test('postChoirSongPartName - missing parameters 1', async () => {
-  const response = await postChoirSongPartName({ songId: song1, name: 'metzosoprano' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(400)
-  expect(response.body.ok).toBe(false)
-})
-
-test('postChoirSongPartName - missing parameters 2', async () => {
-  const response = await postChoirSongPartName({ choirId: london, name: 'metzosoprano' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(400)
-  expect(response.body.ok).toBe(false)
-})
-
-test('postChoirSongPartName - missing parameters 3', async () => {
-  const response = await postChoirSongPartName({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(400)
-  expect(response.body.ok).toBe(false)
-})
-
-test('deleteChoirSongPartName - delete partname', async () => {
-  let response = await deleteChoirSongPartName({ choirId: london, songId: song1, partNameId: 'yyy' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.songId).toBe(song1)
-
-  response = await getChoirSong({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.song.songId).toBe(song1)
-  expect(response.body.song.partNames.length).toBe(4)
-})
-
-test('deleteChoirSongPartName - invalid partNameId', async () => {
-  const response = await deleteChoirSongPartName({ choirId: london, songId: song1, partNameId: 'xyz' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(404)
-  expect(response.body.ok).toBe(false)
-})
-
-test('deleteChoirSongPartName - missing parameters 1', async () => {
-  const response = await deleteChoirSongPartName({ songId: song1, partNameId: 'xyz' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(400)
-  expect(response.body.ok).toBe(false)
-})
-
-test('deleteChoirSongPartName - missing parameters 2', async () => {
-  const response = await deleteChoirSongPartName({ choirId: london, partNameId: 'xyz' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(400)
-  expect(response.body.ok).toBe(false)
-})
-
-test('deleteChoirSongPartName - missing parameters 3', async () => {
-  const response = await deleteChoirSongPartName({ choirId: london, songId: song1 })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(400)
-  expect(response.body.ok).toBe(false)
 })
 
 test('postChoirSongPart - create part', async () => {
@@ -963,15 +785,6 @@ test('getChoirSongParts - get all parts', async () => {
   expect(response.body.parts.length).toBe(0)
 })
 
-test('getChoirSongParts - get parts matching partNameId', async () => {
-  const response = await getChoirSongParts({ songId: song1, choirId: london, partNameId: 'abc123' })
-  expect(typeof response.body).toBe('string')
-  response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(200)
-  expect(response.body.ok).toBe(true)
-  expect(response.body.parts.length).toBe(1)
-})
-
 test('getUserChoirs - get choir memberships', async () => {
   const response = await getUserChoirs({ userId: rita })
   expect(typeof response.body).toBe('string')
@@ -1006,7 +819,7 @@ test('postChoirSong - create song with parts', async () => {
   const songId = response.body.songId
   expect(typeof response.body.song).toBe('object')
   expect(response.body.song.partNames.length).toBe(5)
-  expect(typeof response.body.song.partNames[0]).toBe('object')
+  expect(response.body.song.partNames[0]).toBe('bass')
 
   response = await getChoirSong({ choirId: london, songId: songId })
   expect(typeof response.body).toBe('string')
@@ -1016,7 +829,7 @@ test('postChoirSong - create song with parts', async () => {
   expect(response.body.song.name).toBe('One Love')
   expect(typeof response.body.song).toBe('object')
   expect(response.body.song.partNames.length).toBe(5)
-  expect(typeof response.body.song.partNames[0]).toBe('object')
+  expect(response.body.song.partNames[0]).toBe('bass')
 })
 
 test('deleteChoirSongPart - delete song part', async () => {
@@ -1039,8 +852,8 @@ test('deleteChoirSongPart - invalid partId', async () => {
   const response = await deleteChoirSongPart({ songId: song1, choirId: london, partId: 'nonsense' })
   expect(typeof response.body).toBe('string')
   response.body = JSON.parse(response.body)
-  expect(response.statusCode).toBe(404)
-  expect(response.body.ok).toBe(false)
+  expect(response.statusCode).toBe(200)
+  expect(response.body.ok).toBe(true)
 })
 
 test('deleteChoirSongPart - missing parameters #1', async () => {
@@ -1157,7 +970,8 @@ test('postChoirSongPartDownload - download missing params', async () => {
 })
 
 afterAll(async () => {
-  await nano.db.destroy(DB1)
-  await nano.db.destroy(DB2)
-  await nano.db.destroy(DB3)
+  const params = {
+    TableName: DYNAMODB_TABLE
+  }
+  await aws.dynamoDBClient.deleteTable(params).promise()
 })

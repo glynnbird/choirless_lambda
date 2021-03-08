@@ -1,6 +1,6 @@
 const debug = require('debug')('choirless')
-const presign = require('./lib/presign.js')
 const lambda = require('./lib/lambda.js')
+const S3 = require('./lib/aws.js').S3
 
 // generate URL to allow upload of a song part's video
 // Parameters:
@@ -22,13 +22,13 @@ const handler = async (opts) => {
 
   debug('postChoirSongPartDownload generate get url', opts.partId)
 
-  // calculate bucket and key
-  const method = 'GET'
+  // calculate key
   const key = [opts.choirId, opts.songId, opts.partId].join('+') + '.webm'
 
   // generate pre-signed URL
-  const url = presign(method, key)
-  const body = { ok: true, method: method, url: url, bucket: process.env.COS_DEFAULT_BUCKET, key: key }
+  const params = { Bucket: process.env.RAW_BUCKET, Key: key }
+  const url = await S3.getSignedUrlPromise('getObject', params)
+  const body = { ok: true, method: 'GET', url: url, bucket: process.env.RAW_BUCKET, key: key }
 
   // return API response
   return {

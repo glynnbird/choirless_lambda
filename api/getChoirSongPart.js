@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const aws = require('./lib/aws.js')
 
 // fetch a song part knowing choirId/songId/partId
 // Parameters:
@@ -13,12 +10,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // extract parameters
   if (!opts.choirId || !opts.songId || !opts.partId) {
@@ -33,12 +24,22 @@ const handler = async (opts) => {
   let statusCode = 200
   let body = null
   try {
-    const id = opts.choirId + ':song:' + opts.songId + ':part:' + opts.partId
-    debug('getChoirSongPart', id)
-    const part = await db.get(id)
-    delete part._id
-    delete part._rev
-    body = { ok: true, part: part }
+    debug('getChoirSong', opts.choirId, opts.songId)
+    const req = {
+      TableName: aws.TABLE,
+      Key: {
+        pk: `song#${opts.songId}`,
+        sk: `#part#${opts.partId}`
+      }
+    }
+    const response = await aws.documentClient.get(req).promise()
+    if (!response.Item) {
+      throw new Error('songpart not found')
+    }
+    const songpart = response.Item
+    delete songpart.pk
+    delete songpart.sk
+    body = { ok: true, part: songpart }
   } catch (e) {
     body = { ok: false, message: 'part not found' }
     statusCode = 404

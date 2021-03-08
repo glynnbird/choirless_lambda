@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const aws = require('./lib/aws.js')
 
 // fetch the song parts of a choir's song
 // Parameters:
@@ -11,12 +8,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // extract parameters
   if (!opts.songId || !opts.choirId) {
@@ -32,22 +23,20 @@ const handler = async (opts) => {
   let body = null
   try {
     debug('getChoirSongParts', opts.songId)
-    const query = {
-      selector: {
-        type: 'songpart',
-        songId: opts.songId
+    const req = {
+      TableName: aws.TABLE,
+      KeyConditions: {
+        pk: { ComparisonOperator: 'EQ', AttributeValueList: [`song#${opts.songId}`] },
+        sk: { ComparisonOperator: 'BEGINS_WITH', AttributeValueList: ['#part#'] }
       }
     }
-    if (opts.partNameId) {
-      query.selector.partNameId = opts.partNameId
-    }
-    const results = await db.partitionedFind(opts.choirId, query)
+    const response = await aws.documentClient.query(req).promise()
     body = {
       ok: true,
-      parts: results.docs.map((d) => {
-        delete d._id
-        delete d._rev
-        return d
+      parts: response.Items.map((i) => {
+        delete i.pk
+        delete i.sk
+        return i
       })
     }
   } catch (e) {

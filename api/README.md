@@ -8,27 +8,25 @@ This API can be deployed to Lambda or run locally in Node.js. Application data i
 
 The following environment variables configure how the API accesses the database
 
-- `COUCH_URL` - the URL of the CouchDB/Cloudant service e.g. `http://admin:admin@localhost:5984`.
-- `COUCH_USERS_DATABASE` - the name of the users database, storing registered Choirless users.
-- `COUCH_CHOIRLESS_DATABASE` - the name of the main choirless database (stores choirs/members/songs/parts).
-- `COUCH_KEYS_DATABASE` - the name of the database for storing API access keys.
-- `COUCH_RENDER_DATABASE` - the name of the database to store render status objects.
-- `COUCH_INVITATION_DATABASE` - the name of the invitations database.
-- `LOCAL_MODE` - if `true` runs without authentication middleware
-- `COS_REGION` - the Cloudant object storage region
-- `COS_ACCESS_KEY_ID` - Cloud Object Storage credentials
-- `COS_ACCESS_KEY_SECRET` - Cloud Object Storage credentials
-- `COS_DEFAULT_BUCKET` - Cloud Object Storage raw upload bucket
-- `COS_ENDPOINT` - Cloud Object Storage endpoint
+- `REGION` - the AWS region to use e.g 'eu-west-1'
+- `TABLE` - the DynamoDB table to use e.g. 'choirless'
+- `TEST_MODE` - when set to `true` uses DynamoDB on localhost:8000 for test purposes
+- `RAW_BUCKET` - the name of the raw S3 bucket e.g. `raw`
+- `FINAL_BUCKET` - the name of the final S3 bucket e.g. `final`
 
 ## Testing
 
-Run the automated test suite with:
+Start DynamoDB locally:
+
+```sh
+docker run -p 8000:8000 amazon/dynamodb-local
+```
+
+Execute the tests
 
 ```sh
 npm run test
 ```
-
 Tests are configured to run automatically in Travis.
 
 ## API Reference
@@ -50,41 +48,9 @@ The following objects are stored:
 +-------------+       +--------/-\-----------+         +-----/-\------+
 |             |       |                      |         |              |
 |    user     +-------+     choirmember      |         |  songpart    |
-|             |       |                      |         |              |
+|  (cognito)  |       |                      |         |              |
 +-------------+       +----------------------+         +--------------+
-
-+-------------+
-|             |
-| invitation  |
-|             |
-+-------------+
-
-+-------------+
-|             |
-|   render    |
-|             |
-+-------------+
 ```
-
-### Users
-
-```js
-{
-  _id: "<userid>",
-  type: "user",
-  userId: "<userid>",
-  userType: "regular",
-  name: "Glynn Bird",
-  email: "bob@aol.com",
-  createdOn: "2018-01-26",
-  verified: true,
-  password: "<sha256(salt + password)>",
-  salt: "<some random data>"
-}
-```
-
-- `userType` can be `regular` or `admin`.
-
 
 ### Choirs
 
@@ -117,6 +83,7 @@ choirType:
   userId: "<userid>",
   joined: "2020-05-02",
   name: "Glynn Bird",
+  choirName: "Barber Shop Choir",
   memberType: "leader"
 }
 ```
@@ -138,16 +105,7 @@ memberType:
   songId: "<songid>",
   userId: "<userid>",
   createdOn: "2020-05-01",
-  partNames: [
-    {
-      partNameId: "abc",
-      name: "baritone",
-    },
-    {
-      partNameId: "def",
-      name: "tenor"
-    }
-  ]
+  partNames: [ "backing", "soprano", "alto", "tenor", "bass" ]
 }
 ```
 
@@ -179,31 +137,3 @@ partType:
 - `backing` - backing track
 - `reference` - exemplar rendition of part
 - `rendition` - choir members rendition of a reference part
-
-### Invitation
-
-This allows a user to extend an invitation to new user to join the choir:
-
-```js
-{
-  
-  creator: '<id of user who created the invite>',
-  invitee: '<email of invited user>',
-  choirId: '<id of choir>',
-  expires: <expiry timestamp of invite>
-}
-```
-
-### Render
-
-This records progress of the rendering process:
-
-```js
-{
-  choirId: '<id of choir whose song is being rendererd>',
-  songId: '<id of song being rendererd>',
-  partId: "<id of the part that triggered the render>",
-  status: "new", // one of new/converted/aligned/rendered/composited/done
-  date: "2020-08-01T10:56:22.000Z"
-}
-```

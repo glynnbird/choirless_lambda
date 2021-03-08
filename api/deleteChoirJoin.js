@@ -1,9 +1,6 @@
-const Nano = require('nano')
 const debug = require('debug')('choirless')
 const lambda = require('./lib/lambda.js')
-let nano = null
-let db = null
-const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
+const aws = require('./lib/aws.js')
 
 // delete user's membership of a choir
 // Parameters:
@@ -12,12 +9,6 @@ const DB_NAME = process.env.COUCH_CHOIRLESS_DATABASE
 const handler = async (opts) => {
   // pre-process lambda event
   opts = lambda(opts)
-
-  // connect to db - reuse connection if present
-  if (!db) {
-    nano = Nano(process.env.COUCH_URL)
-    db = nano.db.use(DB_NAME)
-  }
 
   // check choirType is valid
   if (!opts.choirId || !opts.userId) {
@@ -28,14 +19,19 @@ const handler = async (opts) => {
     }
   }
 
-  const id = opts.choirId + ':member:' + opts.userId
   const body = { ok: true }
   let statusCode = 200
   try {
     // load and delete the membership doc
-    debug('deleteChoirJoin', id)
-    const doc = await db.get(id)
-    await db.destroy(doc._id, doc._rev)
+    debug('deleteChoirJoin', opts.choirId, opts.userId)
+    const req = {
+      TableName: aws.TABLE,
+      Key: {
+        pk: `choir#${opts.choirId}`,
+        sk: `#user#${opts.userId}`
+      }
+    }
+    await aws.documentClient.delete(req).promise()
   } catch (e) {
     // if we got here, we weren't a member anyway!
     body.ok = false
